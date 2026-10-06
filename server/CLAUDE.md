@@ -8,11 +8,11 @@ This folder holds the project's own backend, when it has one: a **Node** API (Ex
 
 **NestJS** (`@nestjs/core`):
 - One module per feature: `<feature>.module.ts`, `.controller.ts`, `.service.ts`.
-- Controllers stay thin. The db API is injected as a provider.
+- Controllers stay thin and always call a service. The service gets the db API injected through an abstract-class repository provider (see the `/new-endpoint` NestJS template).
 - Validate with a Zod pipe that wraps the utils schema, not class-validator DTOs that duplicate it.
 
 **Express** (`express`):
-- A router per feature (`routes/<feature>.ts`), plus `<feature>.service.ts` when there's real logic.
+- A router per feature (`routes/<feature>.ts`) plus a service per feature (`services/<feature>.service.ts`), always, even when it only delegates to db. Services import the db functions directly, since Express has no DI container.
 - Validate with `validate(schema)` middleware on body, query and params.
 - Wrap async handlers so errors reach the central error middleware.
 
@@ -26,7 +26,7 @@ Full rules are in `.claude/rules/csharp.md`. In short:
 ## Conventions (all backends)
 - Validate every input (body, params, query) before using it: the utils Zod schemas in Node, the project's validation in .NET. Pass only the parsed values to the db API, never `req.body`/`req.query` objects (with MongoDB, `{ "$ne": null }` in a body is an injection).
 - Response shapes are shared DTOs, mapped from data rows. Never leak internal fields like password hashes.
-- Status codes: 400 for validation, 401 for unauthenticated, 403 for forbidden, 404 for not found, 409 for conflict. Use one error format for the whole API.
+- Status codes: 400 for validation, 401 for unauthenticated, 403 for forbidden, 404 for not found, 409 for conflict, 422 for a business-rule violation, 500 only for unexpected failures. One error shape for the whole API: `{ code, message, details? }`. Messages name the resource and id (`Order 123 not found`) but never include secrets, other users' data, stack traces or SQL. Full rules: `.claude/rules/backend.md`.
 - Every route that isn't public must check auth. Read config and secrets from env or config providers, never hard-coded.
 - If the backend calls SAP (OData/RFC), keep that in one client module, and never invent entity or field names.
 

@@ -9,7 +9,7 @@ Present in Node-backend projects, and optionally in client-only (SAP) projects f
 ## Patterns
 - Define each schema once and derive its type: `export const createUserSchema = z.object({ ... }); export type CreateUserInput = z.infer<typeof createUserSchema>;`
 - Name things `<entity><Action>Schema` / `<Entity><Action>Input` for requests and `<entity>Schema` / `<Entity>` for responses.
-- Export everything through the package entry point (`src/index.ts` or the `exports` field). Consumers never deep-import.
+- Export everything through the package entry point (`src/index.ts` or the `exports` field). Consumers never deep-import. Exception: Drizzle table definitions are imported from each table's own file (`.claude/rules/code-style.md`), so expose them as subpath exports (`<utils>/schema/users`) rather than through a schema barrel.
 - Ids follow the DB engine. PostgreSQL uses `z.string().uuid()` or `z.coerce.number().int()`. MongoDB uses one shared `objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i)`. DTOs expose `id`, never `_id` or `__v`.
 - Keep schemas pure, with no I/O. Put refinements that need the DB in server or db.
 

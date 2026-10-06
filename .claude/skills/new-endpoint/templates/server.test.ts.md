@@ -1,6 +1,6 @@
 # server test template
 
-Mock the db package and test HTTP behavior. Use supertest if it's installed; otherwise use the framework's testing module or call the handler directly. Use `vi` for Vitest and `jest` for Jest.
+Mock the db package and test HTTP behavior. **NestJS:** don't mock the db module; replace the injected repository instead: `Test.createTestingModule({ imports: [MatchesModule] }).overrideProvider(MatchesRepository).useValue({ getUserById: vi.fn(), listUserMatches: vi.fn() })`, then set return values on those mocks. The example below is the Express version. Use supertest if it's installed; otherwise use the framework's testing module or call the handler directly. Use `vi` for Vitest and `jest` for Jest.
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -43,6 +43,7 @@ describe('GET /users/:id/matches', () => {
     const res = await request(createApp()).get(`/users/${USER_ID}/matches`).set('Authorization', 'Bearer test');
 
     expect(res.status).toBe(404);
+    expect(res.body).toEqual({ code: 'USER_NOT_FOUND', message: `User ${USER_ID} not found` });
   });
 });
 ```

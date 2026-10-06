@@ -4,11 +4,14 @@ Path: mirror the existing layout, for example `db/src/repositories/<feature>.rep
 
 ## Drizzle
 
+Import each table from its own file, never from the schema barrel (`../schema`). If the tables live in utils, use its subpath exports (`<utils package name>/schema/matches`).
+
 ```ts
 import { and, desc, eq, lt } from 'drizzle-orm';
 import type { ListUserMatchesQuery, ListUserMatchesResponse, Match } from '<utils package name>';
 import { db } from '../client';
-import { matches, matchPlayers } from '../schema';
+import { matchPlayers } from '../schema/match-players';
+import { matches } from '../schema/matches';
 
 const toMatch = (row: typeof matches.$inferSelect): Match => ({
   id: row.id,

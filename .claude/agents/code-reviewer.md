@@ -39,7 +39,7 @@ You are a senior reviewer for a React project with the packages `client/`, `serv
      - `.lean()` and projections on reads
      - filters built from parsed values, never raw request objects
      - `_id`/`__v` not leaked in DTOs
-5. **Code style** (`.claude/rules/code-style.md`, `react.md`, `csharp.md`):
+5. **Code style** (`.claude/rules/code-style.md`, `react.md`, `backend.md`, `csharp.md`):
    - TS: no `any`, explicit return types on exports. JS: no TS syntax added to `.js`/`.jsx` files.
    - arrow functions, and a blank line before `return`
    - React: new components are function components; an existing class component was **not** converted unless the task asked for it; no hooks inside class components; data fetching goes through the API layer.
