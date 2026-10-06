@@ -89,8 +89,10 @@ test('type errors only in files Claude did not edit do not block, and the ledger
   const root = makeRepo({ committed: base({ 'server/src/old.ts': 'TYPE_ERROR' }), dirty: { 'server/src/a.ts': 'export const a = 1;' } });
   edits.recordEdit(root, SESSION, 'server/src/a.ts');
   const res = stop(root);
+  const out = JSON.parse(res.stdout);
 
-  assert.equal(res.stdout, '', res.stderr);
+  assert.equal(out.decision, undefined, res.stderr);
+  assert.match(out.systemMessage, /none in the files you changed/);
   assert.deepEqual(edits.readEdits(root, SESSION), []);
   cleanup(root);
 });
@@ -178,16 +180,29 @@ if (bad.length) { console.log('FAIL suite: ' + bad.join(',')); process.exit(1); 
 console.log('suite ok');`;
 const withSuite = () => base({ 'server/package.json': { name: 'server', scripts: { test: 'node run-tests.cjs' }, devDependencies: { vitest: '*' } }, 'server/run-tests.cjs': FULL_SUITE });
 
-test('runs the full test suite of a touched package and flags possibly pre-existing failures', () => {
+test('full-suite failures outside the related tests do not block; the user gets them as a message', () => {
   const root = makeRepo({ committed: withSuite(), dirty: { 'server/src/a.ts': 'export const a = 1;', 'server/src/b.ts': 'TEST_FAIL' } });
+  edits.recordEdit(root, SESSION, 'server/src/a.ts');
+  const res = stop(root);
+  const ledger = edits.readEdits(root, SESSION);
+  cleanup(root);
+  const out = JSON.parse(res.stdout);
+
+  assert.equal(out.decision, undefined, res.stderr);
+  assert.match(out.systemMessage, /full suite \(npm run test\) fails, but not in tests related to the files you changed[\s\S]*FAIL suite: b\.ts/);
+  assert.deepEqual(ledger, []);
+});
+
+test('a full-suite failure in the related tests blocks the stop', () => {
+  const root = makeRepo({ committed: withSuite(), dirty: { 'server/src/a.ts': 'TEST_FAIL' } });
   edits.recordEdit(root, SESSION, 'server/src/a.ts');
   const res = stop(root);
   cleanup(root);
   const { decision, reason } = JSON.parse(res.stdout);
 
   assert.equal(decision, 'block');
-  assert.match(reason, /## server test \(npm run test\)[\s\S]*FAIL suite: b\.ts/);
-  assert.match(reason, /may be pre-existing/);
+  assert.match(reason, /## server test \(vitest related\)[\s\S]*FAIL related to src\/a\.ts/);
+  assert.match(reason, /full suite \(npm run test\) fails too/);
 });
 
 test('a passing full suite lets the stop through', () => {
