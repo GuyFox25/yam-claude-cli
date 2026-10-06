@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readInput, advise, allow } from '../lib/hook-io.mjs';
-import { projectRoot, resolveInRoot, existingPackages, pkgJson, walkFiles, toPosix } from '../lib/detect.mjs';
+import { projectRoot, resolveInRoot, existingPackages, pkgJson, walkFiles, toPosix, IS_WIN } from '../lib/detect.mjs';
 import { importSpecs, moduleId, resolvesTo } from '../lib/imports.mjs';
 import { markOnce } from '../lib/edits.mjs';
 
@@ -44,8 +44,10 @@ const importsTarget = (file, spec) => {
   if (spec.startsWith('.')) return resolvesTo(file, spec, abs);
   if (!utilsName || !(spec === utilsName || spec.startsWith(`${utilsName}/`))) return false;
   const sub = spec.slice(utilsName.length + 1);
+  const subId = sub.replace(/\.[cm]?[jt]sx?$/, '').replace(/\/index$/, '');
 
-  return sub ? subpaths.has(sub.replace(/\.[cm]?[jt]sx?$/, '').replace(/\/index$/, '')) : reExported;
+  // moduleId case-folds on Windows, so the subpath is folded the same way.
+  return sub ? subpaths.has(IS_WIN ? subId.toLowerCase() : subId) : reExported;
 };
 
 const dependents = [];

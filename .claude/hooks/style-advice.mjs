@@ -2,7 +2,7 @@
 // PostToolUse(Edit|Write|MultiEdit): advisory notes on the code style rules (.claude/rules/code-style.md, react.md, backend.md)
 // for the text Claude just added to a JS/TS file. Line-based heuristics, so it never blocks; the project's ESLint config wins.
 import { readFileSync } from 'node:fs';
-import { basename, extname, join } from 'node:path';
+import { extname, join } from 'node:path';
 import { readInput, advise, allow } from '../lib/hook-io.mjs';
 import { projectRoot, resolveInRoot, walkFiles } from '../lib/detect.mjs';
 
@@ -26,6 +26,15 @@ const pkg = rel.split('/')[0];
 const isTs = /^\.(m|c)?tsx?$/.test(ext);
 const isTest = /\.(test|spec)\.[cm]?[jt]sx?$/.test(rel) || /(^|\/)(__tests__|test|tests|e2e)\//.test(rel);
 const isComponentFile = pkg === 'client' && /\.(jsx|tsx)$/.test(ext) && !/\/(api|services|hooks|lib|utils)\//.test(rel);
+
+// An unreadable file (locked, deleted mid-walk) must not crash an advisory hook.
+const readOrEmpty = (file) => {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch {
+    return '';
+  }
+};
 
 // Code with string literals blanked out, so `'function'` or `'req.body'` in a message doesn't count.
 const codeOf = (line) => line.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
@@ -97,8 +106,9 @@ const mixedResolver = () => {
   const usesYup = /['"](yup|@hookform\/resolvers\/yup)['"]|\byupResolver\b/.test(added);
   const usesZod = /['"]@hookform\/resolvers\/zod['"]|\bzodResolver\b/.test(added);
   if (usesYup === usesZod) return null;
-  const others = walkFiles(join(root, 'client', 'src'), { max: 400, filter: (f) => /\.(jsx?|tsx?)$/.test(f) && basename(f) !== basename(abs) });
-  const existing = others.map((f) => readFileSync(f, 'utf8')).join('\n');
+  // Every other file: comparing basenames would also skip each other index.tsx.
+  const others = walkFiles(join(root, 'client', 'src'), { max: 400, filter: (f) => /\.(jsx?|tsx?)$/.test(f) && f !== abs });
+  const existing = others.map(readOrEmpty).join('\n');
   const hasYup = /\byupResolver\b/.test(existing);
   const hasZod = /\bzodResolver\b/.test(existing);
   if (usesYup && hasZod && !hasYup) return 'Yup in a client whose forms use zodResolver: keep Zod (reuse the utils schema when there is one)';

@@ -154,3 +154,33 @@ test('Read of a file over 256 KB is blocked unless offset/limit is given', () =>
   assert.equal(part.code, 0, part.stderr);
   assert.equal(small.code, 0, small.stderr);
 });
+
+test('large images and PDFs are not blocked by the size guard', () => {
+  const big = 'x'.repeat(300 * 1024);
+  const repo = makeRepo({ committed: { 'docs/screen.png': big, 'docs/spec.pdf': big } });
+  const read = (file_path, extra = {}) => runHook('guard-boundaries.mjs', { tool_name: 'Read', tool_input: { file_path: join(repo, file_path), ...extra } }, repo);
+  const results = [read('docs/screen.png'), read('docs/spec.pdf', { pages: '1-3' })];
+  cleanup(repo);
+
+  for (const res of results) assert.equal(res.code, 0, res.stderr);
+});
+
+test('the Drizzle barrel check allows namespace imports and single-file schema modules', () => {
+  const repo = makeRepo({
+    committed: {
+      'db/package.json': { name: 'db', dependencies: { 'drizzle-orm': '*' } },
+      'server/package.json': { name: 'server', dependencies: {} },
+      'server/src/users/schema.ts': 'export const createUserSchema = {};\n',
+      'db/src/schema/index.ts': "export * from './users';\n",
+    },
+  });
+  const write = (file_path, content) => runHook('guard-boundaries.mjs', { tool_name: 'Write', tool_input: { file_path: join(repo, file_path), content } }, repo);
+  const client = write('db/src/client.ts', "import * as schema from './schema';\nexport const db = drizzle(pool, { schema });\n");
+  const zod = write('server/src/users/users.service.ts', "import { createUserSchema } from './schema';\n");
+  const barrel = write('db/src/repos/users.ts', "import { users } from '../schema';\n");
+  cleanup(repo);
+
+  assert.equal(client.code, 0, client.stderr);
+  assert.equal(zod.code, 0, zod.stderr);
+  assert.equal(barrel.code, 2);
+});

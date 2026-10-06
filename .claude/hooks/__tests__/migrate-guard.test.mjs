@@ -104,3 +104,26 @@ test('mongo seed lists and migrate-mongo are checked', () => {
     assert.equal(bash(root, 'npx migrate-mongo up').code, 2);
   });
 });
+
+test('an inline prefix overrides only its own variable (Prisma directUrl still counts)', () => {
+  withRepo({ 'db/schema.prisma': 'datasource db {\n  url = env("DATABASE_URL")\n  directUrl = env("DIRECT_URL")\n}\n', 'db/.env': `DIRECT_URL=${REMOTE}\n` }, (root) => {
+    assert.equal(bash(root, 'DATABASE_URL=postgres://u:p@localhost:5432/app npx prisma migrate deploy').code, 2);
+  });
+});
+
+test('env files named by the command or the migrate script are checked too', () => {
+  const pkg = { ...DB_PKG, scripts: { ...DB_PKG.scripts, 'db:migrate:prod': 'dotenv -e .env.production -- drizzle-kit migrate' } };
+  withRepo({ 'db/package.json': pkg, 'db/.env': 'DATABASE_URL=postgres://dev:dev@localhost:5432/app\n', 'db/.env.production': `DATABASE_URL=${REMOTE}\n` }, (root) => {
+    assert.equal(bash(root, 'npm run db:migrate:prod -w @app/db').code, 2);
+    assert.equal(bash(root, 'npx dotenv -e .env.production -- npx drizzle-kit migrate').code, 2);
+    assert.equal(bash(root, 'npm run db:migrate -w @app/db').code, 0);
+  });
+});
+
+test('SQL Server local shorthands (. and (local)) count as local', () => {
+  for (const server of ['.\\SQLEXPRESS', '(local)']) {
+    withRepo({ 'Api/appsettings.json': { ConnectionStrings: { Default: `Server=${server};Database=App;Trusted_Connection=True` } } }, (root) => {
+      assert.equal(bash(root, 'dotnet ef database update').code, 0, server);
+    });
+  }
+});

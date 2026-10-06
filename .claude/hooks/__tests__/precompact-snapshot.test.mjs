@@ -12,6 +12,9 @@ const TRANSCRIPT = [
   line({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'q1', name: 'AskUserQuestion', input: { questions: [] } }] } }),
   line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'q1', content: 'User answered: nullable timestamp' }] } }),
   line({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'p1', name: 'ExitPlanMode', input: { plan: '# Plan\nAdd column, migration, service.' } }] } }),
+  line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'p1', content: 'User has approved your plan.' }] } }),
+  line({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 'p2', name: 'ExitPlanMode', input: { plan: '# Rejected plan\nDrop the orders table.' } }] } }),
+  line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'p2', is_error: true, content: "The user doesn't want to proceed with this tool use." }] } }),
   line({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'TodoWrite', input: { todos: [{ content: 'write migration', status: 'completed' }, { content: 'update service', status: 'in_progress' }] } }] } }),
   'not json',
   line({ type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'also update the client table' }] } }),
@@ -33,6 +36,7 @@ test('saves prompts, decisions, plan, todos and git status; session-context rest
   assert.doesNotMatch(snapshot, /meta noise|command-name|tool_result/);
   assert.match(snapshot, /## Decisions[\s\S]*nullable timestamp/);
   assert.match(snapshot, /## Last approved plan\n# Plan/);
+  assert.doesNotMatch(snapshot, /Rejected plan/);
   assert.match(snapshot, /\[completed\] write migration\n- \[in_progress\] update service/);
   assert.match(snapshot, /db\/src\/orders\.ts/);
   assert.match(restored.stdout, /Pre-compaction snapshot[\s\S]*cancelledAt/);

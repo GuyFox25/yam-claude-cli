@@ -37,8 +37,8 @@ const isEnv = nameCmp.startsWith('.env') && !ENV_TEMPLATES.has(nameCmp);
 // Read only needs the secrets check (settings can't exempt .env.example from a `.env.*` deny rule, this hook can).
 if (input?.tool_name === 'Read') {
   if (isEnv || relCmp.split('/').includes('secrets')) block(`Blocked: ${rel} may contain secrets. Never read it; ask the user for the values you need (or read .env.example).`);
-  // A Read with offset/limit is a deliberate partial read, so heavy files are allowed then.
-  const heavy = ti.limit == null && ti.offset == null ? heavyReason(abs, relCmp) : null;
+  // A Read with offset/limit (or PDF pages) is a deliberate partial read, so heavy files are allowed then.
+  const heavy = ti.limit == null && ti.offset == null && ti.pages == null ? heavyReason(abs, relCmp) : null;
   if (heavy) block(`Blocked: ${rel} ${heavy}, so reading it whole wastes context. Use Grep, or Read with offset/limit if you really need it.`);
   allow();
 }
@@ -123,11 +123,26 @@ if (relCmp.startsWith('server/') && isCode && isHttpLayer) {
 }
 
 // Drizzle tables are imported from their own file (code-style.md), never from the schema barrel.
-const usesDrizzle = ['db', 'utils', 'server', '.'].some((p) => 'drizzle-orm' in allDeps(p === '.' ? readJson(join(root, 'package.json')) : pkgJson(root, p)));
-if (usesDrizzle && isCode && /^(db|server|utils)\//.test(relCmp)) {
+const usesDrizzle = () => ['db', 'utils', 'server', '.'].some((p) => 'drizzle-orm' in allDeps(p === '.' ? readJson(join(root, 'package.json')) : pkgJson(root, p)));
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+// `import * as schema from './schema'` (drizzle(client, { schema })) and `export * from` need the whole barrel.
+const isWholeModule = (spec) => new RegExp(`(?:import\\s+\\*\\s+as\\s+\\w+|export\\s+\\*(?:\\s+as\\s+\\w+)?)\\s+from\\s*['"]${escapeRe(spec)}['"]`).test(added);
+// A relative `./schema` that is a single module (server/src/users/schema.ts with Zod schemas) is not a barrel.
+const isSingleFile = (spec) => {
+  const base = resolve(dirname(abs), spec.replace(/\.[cm]?[jt]s$/, ''));
+
+  return !existsSync(base) && ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'].some((ext) => existsSync(`${base}${ext}`));
+};
+if (isCode && /^(db|server|utils)\//.test(relCmp) && usesDrizzle()) {
   const internal = ['utils', 'db'].map((p) => pkgJson(root, p)?.name).filter(Boolean);
   const isProjectPath = (spec) => /^(\.|@\/|~\/|#)/.test(spec) || internal.some((n) => spec.startsWith(`${n}/`));
-  const barrel = specifiers.find((spec) => isProjectPath(spec) && /(^|\/)schema(\/index)?(\.[cm]?[jt]s)?$/.test(spec));
+  const barrel = specifiers.find(
+    (spec) =>
+      isProjectPath(spec) &&
+      /(^|\/)schema(\/index)?(\.[cm]?[jt]s)?$/.test(spec) &&
+      !isWholeModule(spec) &&
+      !(spec.startsWith('.') && !/\/index(\.[cm]?[jt]s)?$/.test(spec) && isSingleFile(spec)),
+  );
   if (barrel) {
     block(`Blocked: "${barrel}" is the Drizzle schema barrel. Import each table from its own file: ../schema/<table> in db, <utils package>/schema/<table> from utils (add the subpath to utils' exports if it's missing).`);
   }

@@ -40,6 +40,8 @@ const summarize = (entries) => {
   const prompts = [];
   const asked = new Map();
   const answers = [];
+  // ExitPlanMode calls by id; a plan counts only once its tool_result shows it was approved (not an error/rejection).
+  const proposed = new Map();
   let plan = null;
   let todos = null;
   for (const e of entries) {
@@ -50,13 +52,14 @@ const summarize = (entries) => {
       if (text && !text.startsWith('<') && !(Array.isArray(content) && content.some((c) => c?.type === 'tool_result'))) prompts.push(clip(text, MAX_PROMPT));
       for (const c of Array.isArray(content) ? content : []) {
         if (c?.type === 'tool_result' && asked.has(c.tool_use_id)) answers.push(clip(textOf(c.content), MAX_PROMPT * 2));
+        if (c?.type === 'tool_result' && proposed.has(c.tool_use_id) && !c.is_error) plan = proposed.get(c.tool_use_id);
       }
     }
     if (e.type === 'assistant' && Array.isArray(content)) {
       for (const c of content) {
         if (c?.type !== 'tool_use') continue;
         if (c.name === 'AskUserQuestion') asked.set(c.id, true);
-        if (c.name === 'ExitPlanMode' && typeof c.input?.plan === 'string') plan = c.input.plan;
+        if (c.name === 'ExitPlanMode' && typeof c.input?.plan === 'string') proposed.set(c.id, c.input.plan);
         if (c.name === 'TodoWrite' && Array.isArray(c.input?.todos)) todos = c.input.todos;
       }
     }

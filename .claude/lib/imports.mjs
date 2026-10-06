@@ -1,5 +1,5 @@
 // Import specifiers in JS/TS source, and whether a specifier points at a given file.
-import { dirname, extname, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { IS_WIN, toPosix } from './detect.mjs';
 
 // import/export ... from, import(), require(), side-effect import.
@@ -18,9 +18,7 @@ export const moduleId = (abs) => {
 // Does the relative specifier `spec`, imported from `fromAbs`, resolve to `targetAbs`? (extension and /index optional)
 export const resolvesTo = (fromAbs, spec, targetAbs) => {
   if (!spec.startsWith('.')) return false;
-  const resolved = resolve(dirname(fromAbs), spec);
-  // './user.js' in TS ESM points at user.ts.
-  const id = moduleId(CODE_EXT.test(extname(resolved)) ? resolved : `${resolved}.js`);
 
-  return id === moduleId(targetAbs) || moduleId(resolved) === moduleId(targetAbs);
+  // './user.js' in TS ESM points at user.ts: moduleId drops the extension on both sides.
+  return moduleId(resolve(dirname(fromAbs), spec)) === moduleId(targetAbs);
 };

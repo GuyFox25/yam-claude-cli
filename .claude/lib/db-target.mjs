@@ -8,7 +8,8 @@ const DEFAULT_VARS = ['DATABASE_URL', 'DB_URL', 'POSTGRES_URL', 'POSTGRES_PRISMA
 // Production/staging files are never what a local migrate loads.
 const ENV_FILES = ['.env', '.env.local', '.env.development', '.env.development.local'];
 const ENV_DIRS = ['db', 'server', '.'];
-const LOCAL = /^(localhost|127(\.\d+){3}|::1|\[::1\]|0\.0\.0\.0|host\.docker\.internal)$/i;
+// `.` and `(local)` are SQL Server's shorthands for the local default instance.
+const LOCAL = /^(localhost|127(\.\d+){3}|::1|\[::1\]|0\.0\.0\.0|host\.docker\.internal|\.|\(local\))$/i;
 
 const readText = (path) => {
   try {
@@ -94,15 +95,20 @@ const appsettingsHosts = (root) => {
   return hosts;
 };
 
+// Env files named in the command or the scripts it runs (dotenv -e .env.production, --env-file=.env.staging, ...).
+const referencedEnvFiles = (text) => [...String(text).matchAll(/(?:^|[\s='"])((?:[\w.-]+\/)*\.env(?:\.[\w-]+)*)(?=$|[\s'"])/g)].map((m) => m[1]);
+
 // Returns the database hosts the command would use (empty when none could be determined).
-// An inline VAR=... prefix decides alone; otherwise process.env, the dev env files and (for dotnet ef) appsettings all count.
-export const dbHosts = (root, command, { dotnet = false } = {}) => {
-  const names = new Set([...DEFAULT_VARS, ...configVars(root)]);
-  const pick = (vars) => [...names].map((n) => hostOf(vars[n])).filter(Boolean);
-  const inline = pick(inlineVars(command));
-  if (inline.length) return inline;
-  const hosts = [...pick(process.env)];
-  for (const dir of ENV_DIRS) for (const file of ENV_FILES) hosts.push(...pick(parseEnv(readText(join(root, dir, file)))));
+// An inline VAR=... prefix overrides only that variable: the ORM may read others too (Prisma's directUrl, for one).
+// process.env, the dev env files, env files the command/scripts name (`scriptText`) and (for dotnet ef) appsettings all count.
+export const dbHosts = (root, command, { dotnet = false, scriptText = '' } = {}) => {
+  const names = [...new Set([...DEFAULT_VARS, ...configVars(root)])];
+  const inline = inlineVars(command);
+  const fromEnv = names.filter((n) => !(n in inline));
+  const pick = (vars, keys) => keys.map((n) => hostOf(vars[n])).filter(Boolean);
+  const hosts = [...pick(inline, names.filter((n) => n in inline)), ...pick(process.env, fromEnv)];
+  const files = new Set([...ENV_FILES, ...referencedEnvFiles(`${command} ${scriptText}`)]);
+  for (const dir of ENV_DIRS) for (const file of files) hosts.push(...pick(parseEnv(readText(join(root, dir, file))), fromEnv));
   if (dotnet) hosts.push(...appsettingsHosts(root));
 
   return [...new Set(hosts)];

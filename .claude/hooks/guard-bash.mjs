@@ -130,16 +130,21 @@ for (const pkg of ['.', ...PACKAGES]) {
   }
 }
 const isMigrateScript = (name) => scripts.has(name) && (/migrat|db:push|seed/i.test(name) || MIGRATE_TOOL.test(scripts.get(name)));
+// Script bodies the migration runs: they may load another env file (dotenv -e .env.production -- drizzle-kit migrate).
+const scriptBodies = [];
 const runsMigration = (seg) => {
   // Skip inline env assignments: DATABASE_URL=... npm run db:migrate
   const tokens = tokensOf(seg).filter((t, i, all) => !all.slice(0, i + 1).every((x) => /^[A-Za-z_]\w*=/.test(x)));
+  const invoked = PM.test(tokens[0] ?? '') ? tokens.slice(1).filter((t) => !t.startsWith('-') && isMigrateScript(t)) : [];
+  scriptBodies.push(...invoked.map((t) => scripts.get(t)));
 
-  return MIGRATE_TOOL.test(seg) || (PM.test(tokens[0] ?? '') && tokens.slice(1).some((t) => !t.startsWith('-') && isMigrateScript(t)));
+  return MIGRATE_TOOL.test(seg) || invoked.length > 0;
 };
 
 const dotnet = EF_UPDATE.test(code);
-if (dotnet || segments.some(runsMigration)) {
-  const hosts = dbHosts(root, command, { dotnet });
+// filter, not some: every segment's scripts are collected.
+if (segments.filter(runsMigration).length || dotnet) {
+  const hosts = dbHosts(root, command, { dotnet, scriptText: scriptBodies.join(' ') });
   const remote = hosts.filter((h) => !isLocalHost(h)).length;
   if (remote) {
     block(`Blocked by .claude/hooks/guard-bash.mjs: this migration/seed would run against a non-local database (${remote} non-local host${remote > 1 ? 's' : ''} in the env/connection settings). Only local databases are migrated from here; ask the user to run it. A local docker host can be allowed with CLAUDE_LOCAL_DB_HOSTS in .claude/settings.local.json "env".`);

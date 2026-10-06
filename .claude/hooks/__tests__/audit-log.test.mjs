@@ -46,3 +46,14 @@ test('rotates the log past the size limit, and never fails on bad input', () => 
   assert.ok(rotated);
   assert.equal(bad.code, 0);
 });
+
+test('credentials in commands and URLs are redacted', () => {
+  const root = makeRepo();
+  runHook('audit-log.mjs', { tool_name: 'Bash', tool_input: { command: 'DATABASE_URL=postgres://admin:s3cret@db-prod:5432/app npm run db:migrate' } }, root);
+  runHook('audit-log.mjs', { tool_name: 'Bash', tool_input: { command: 'sqlcmd -Q "x" "Server=sql;User Id=sa;Password=hunter2"' } }, root);
+  const raw = readFileSync(join(root, '.claude', 'logs', 'audit.jsonl'), 'utf8');
+  cleanup(root);
+
+  assert.doesNotMatch(raw, /s3cret|hunter2/);
+  assert.match(raw, /postgres:\/\/\*\*\*@db-prod/);
+});
