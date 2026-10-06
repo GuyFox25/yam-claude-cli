@@ -34,8 +34,8 @@ Then follow the section for the backend variant.
    - Export it from the db public API, and test it (`templates/db-repo.test.ts.md`).
 3. **server: HTTP layer (no ORM imports!).**
    - Use the NestJS template (`templates/server-controller.nest.ts.md`) or the Express one (`templates/server-route.express.ts.md`).
-   - Validate params, query and body with the utils schema, enforce auth, and map errors to 400/401/403/404/409.
-   - Call only the db function from step 2.
+   - Validate params, query and body with the utils schema, enforce auth, and map errors to 400/401/403/404/409/422 with the `{ code, message, details? }` shape. Not-found messages include the id (`User 123 not found`).
+   - Always add a service, even if it only delegates: controller/router → service → the db function from step 2. NestJS injects the db API through a repository provider; Express services import it directly.
    - Test with the db API mocked (`templates/server.test.ts.md`): the happy path, a 400, and a 401 or 404.
 4. **client.** See section D.
 

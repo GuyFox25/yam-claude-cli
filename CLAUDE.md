@@ -25,7 +25,7 @@ Packages live at fixed root folders; any of them may be missing (hooks and scrip
 | `db/`     | Node data-access API. **The only package that uses the ORM/ODM** (Drizzle, Prisma or Mongoose) or a DB driver. Owns migrations and seeds. | `utils` |
 | `utils/`  | Shared Zod schemas, TS types/DTOs, DB schema definitions. No dependencies on other packages. | nothing internal |
 
-There's more detail in each package's own `CLAUDE.md`. Shared rules live in `.claude/rules/` (code style, React, C#, DB, testing).
+There's more detail in each package's own `CLAUDE.md`. Shared rules live in `.claude/rules/` (code style, React, backend, C#, DB, testing).
 
 ### SAP ABAP backends
 - The backend is ABAP on SAP, outside this repo. You can't see, run or change it; only the client and its API layer are in scope.
@@ -90,8 +90,9 @@ The hooks guard the Edit/Write tools. Never work around them with shell commands
 ## Code style
 
 The full rules are in `.claude/rules/`:
-- JS/TS (`code-style.md`): arrow functions and a blank line before `return`. TS also has no `any` and explicit return types on exports. JS files never get TS syntax.
-- React (`react.md`): new components are function components with hooks. **Existing class components stay classes** unless the user asks to convert them.
+- JS/TS (`code-style.md`): arrow functions, import order, small functions, comments, library lookup order. The project's ESLint config wins where it differs.
+- React (`react.md`): function components with hooks, component folders, SOLID, react-hook-form forms, API data through the yam-lib / mador-yam-* react-query extensions. **Existing class components stay classes** unless the user asks to convert them.
+- Backend (`backend.md`): Zod at every boundary, precise errors in one shape, controller → service → db, dependency injection.
 - C# (`csharp.md`): follow the existing solution; async with `Async` suffix; parameterized SQL only.
 
 Prettier and ESLint (or `dotnet format whitespace` for C#) run automatically after every edit. When you stop, the files **you** changed this session are linted and typechecked (only their errors count) and their related tests run; failures block the stop.

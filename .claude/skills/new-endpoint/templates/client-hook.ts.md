@@ -1,6 +1,6 @@
 # client API function and hook template
 
-Use the data-fetching library the client already has. React Query is shown here; adapt it to SWR or another library if that's what the project uses. Reuse the existing HTTP helper (such as `apiFetch` or an axios instance).
+Use the react-query extensions from yam-lib or `mador-yam-*` when they cover this case (ask their `lib-*` agent for the hook names). Plain React Query is shown here as the fallback; if an older client uses another library, use that instead. Reuse the existing HTTP helper (such as `apiFetch` or an axios instance).
 
 ```ts
 // client/src/api/matches.ts
