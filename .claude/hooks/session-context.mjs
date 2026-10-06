@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SessionStart(startup|resume|clear|compact): print branch, uncommitted files, the package the branch most likely concerns,
-// the detected stack, the client's form/data libraries, each package's ESLint config, and the in-house libraries (regenerating their expert agents). Stdout is added to Claude's context.
+// the detected stack, the client's form/data libraries, each package's ESLint config, and the in-house libraries (regenerating their expert agents). After compaction, also the pre-compaction snapshot. Stdout is added to Claude's context.
 import { readInput } from '../lib/hook-io.mjs';
 import {
   projectRoot,
@@ -24,8 +24,9 @@ import {
   toPosix,
 } from '../lib/detect.mjs';
 import { discoverLibs, syncAgents, agentName } from '../lib/libs.mjs';
+import { readSnapshot } from '../lib/snapshot.mjs';
 
-await readInput();
+const input = await readInput();
 const root = projectRoot();
 const MAX_FILES = 30;
 
@@ -106,6 +107,13 @@ const describeLibs = () => {
   }
 };
 
+// After compaction: the snapshot precompact-snapshot saved (prompts, decisions, plan, todos, edited files).
+const describeSnapshot = () => {
+  const snapshot = input?.source === 'compact' ? readSnapshot(root, input?.session_id) : null;
+
+  return snapshot ? ['', 'Pre-compaction snapshot (task, decisions, edited files; trust it over the summary for details):', snapshot] : [];
+};
+
 const pkgs = existingPackages(root);
 const lines = [
   `Branch: ${branch}`,
@@ -118,6 +126,7 @@ const lines = [
   ...describeEslint(pkgs),
   ...describeLibs(),
   'Run checks with: node .claude/scripts/check.mjs <test|lint|typecheck> [pkg|--changed]',
+  ...describeSnapshot(),
 ];
 
 process.stdout.write(`${lines.join('\n')}\n`);

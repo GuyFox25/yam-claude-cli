@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse(Read|Edit|Write|MultiEdit): protect secrets (Read: env/secrets only), lockfiles, applied migrations (Drizzle/Prisma/EF Core), settings,
+// PreToolUse(Read|Edit|Write|MultiEdit): protect secrets (Read: env/secrets, plus whole reads of lockfiles, build output and huge files), lockfiles, applied migrations (Drizzle/Prisma/EF Core), settings,
 // installed libraries, and the package boundaries (server has no ORM/SQL and its controllers/routers never call db; client never imports
 // server, db or DB drivers; db imports only utils; utils imports nothing internal; Drizzle tables never come from a schema barrel).
 // Asks the user first when an edit adds a dependency or turns a class component into a function component.
@@ -8,6 +8,8 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { readInput, block, allow, ask } from '../lib/hook-io.mjs';
 import { projectRoot, toPosix, resolveInRoot, IS_WIN, LOCKFILES, migrationDirs, isTracked, isEfMigration, pkgJson, packageOf, allDeps, readJson } from '../lib/detect.mjs';
 import { resultAfterEdit } from '../lib/apply-edit.mjs';
+import { importSpecs } from '../lib/imports.mjs';
+import { heavyReason } from '../lib/read-guard.mjs';
 
 const input = await readInput({ strict: true });
 const ti = input?.tool_input ?? {};
@@ -35,6 +37,9 @@ const isEnv = nameCmp.startsWith('.env') && !ENV_TEMPLATES.has(nameCmp);
 // Read only needs the secrets check (settings can't exempt .env.example from a `.env.*` deny rule, this hook can).
 if (input?.tool_name === 'Read') {
   if (isEnv || relCmp.split('/').includes('secrets')) block(`Blocked: ${rel} may contain secrets. Never read it; ask the user for the values you need (or read .env.example).`);
+  // A Read with offset/limit is a deliberate partial read, so heavy files are allowed then.
+  const heavy = ti.limit == null && ti.offset == null ? heavyReason(abs, relCmp) : null;
+  if (heavy) block(`Blocked: ${rel} ${heavy}, so reading it whole wastes context. Use Grep, or Read with offset/limit if you really need it.`);
   allow();
 }
 if (isEnv) block(`Blocked: ${rel} is an env file. Never edit secrets; ask the user to change it (documenting a variable in .env.example is fine).`);
@@ -71,9 +76,7 @@ if (relCmp.startsWith('server/')) {
   }
 }
 
-// Import specifiers in the added text: import/export ... from, import(), require().
-const SPEC_RE = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)['"]([^'"]+)['"]/gm;
-const specifiers = isCode ? [...added.matchAll(SPEC_RE)].map((m) => m[1]) : [];
+const specifiers = isCode ? importSpecs(added) : [];
 const ownPackage = rel.split('/')[0];
 
 // First specifier that reaches one of `pkgs`: by package name (`db`, `@app/db/x`) or by a relative path that resolves into its folder.

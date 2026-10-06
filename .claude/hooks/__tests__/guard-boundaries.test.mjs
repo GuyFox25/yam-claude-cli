@@ -140,3 +140,17 @@ test('asks before adding a dependency, not for a version bump', () => {
   assert.equal(bumped, null);
   assert.equal(driver.code, 2, 'a DB driver in server/ is still a hard block');
 });
+
+test('Read of a file over 256 KB is blocked unless offset/limit is given', () => {
+  const repo = makeRepo({ committed: { 'server/src/fixtures/big.json': `[${'"x",'.repeat(70_000)}"x"]`, 'server/src/small.ts': 'export const a = 1;\n' } });
+  const read = (file_path, extra = {}) => runHook('guard-boundaries.mjs', { tool_name: 'Read', tool_input: { file_path: join(repo, file_path), ...extra } }, repo);
+  const whole = read('server/src/fixtures/big.json');
+  const part = read('server/src/fixtures/big.json', { limit: 100 });
+  const small = read('server/src/small.ts');
+  cleanup(repo);
+
+  assert.equal(whole.code, 2);
+  assert.match(whole.stderr, /\d+ KB.*offset\/limit/s);
+  assert.equal(part.code, 0, part.stderr);
+  assert.equal(small.code, 0, small.stderr);
+});

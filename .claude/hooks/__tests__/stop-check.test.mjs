@@ -170,3 +170,31 @@ test('errorsInFiles matches absolute (dotnet), root- and cwd-relative (tsc) path
     '  Type string is not assignable to type number.',
   ]);
 });
+
+// Fake full suite (the package's test script): fails when any src file contains "TEST_FAIL".
+const FULL_SUITE = `const fs = require('fs'); const path = require('path');
+const bad = fs.readdirSync('src').filter((f) => fs.readFileSync(path.join('src', f), 'utf8').includes('TEST_FAIL'));
+if (bad.length) { console.log('FAIL suite: ' + bad.join(',')); process.exit(1); }
+console.log('suite ok');`;
+const withSuite = () => base({ 'server/package.json': { name: 'server', scripts: { test: 'node run-tests.cjs' }, devDependencies: { vitest: '*' } }, 'server/run-tests.cjs': FULL_SUITE });
+
+test('runs the full test suite of a touched package and flags possibly pre-existing failures', () => {
+  const root = makeRepo({ committed: withSuite(), dirty: { 'server/src/a.ts': 'export const a = 1;', 'server/src/b.ts': 'TEST_FAIL' } });
+  edits.recordEdit(root, SESSION, 'server/src/a.ts');
+  const res = stop(root);
+  cleanup(root);
+  const { decision, reason } = JSON.parse(res.stdout);
+
+  assert.equal(decision, 'block');
+  assert.match(reason, /## server test \(npm run test\)[\s\S]*FAIL suite: b\.ts/);
+  assert.match(reason, /may be pre-existing/);
+});
+
+test('a passing full suite lets the stop through', () => {
+  const root = makeRepo({ committed: withSuite(), dirty: { 'server/src/a.ts': 'export const a = 1;' } });
+  edits.recordEdit(root, SESSION, 'server/src/a.ts');
+  const res = stop(root);
+  cleanup(root);
+
+  assert.equal(res.stdout, '', res.stderr);
+});

@@ -8,6 +8,12 @@
         "content": "SECRET=1"
       }
     },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "pnpm-lock.yaml" } },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "client/dist/assets/index.js" } },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "server/coverage/lcov-report/index.html" } },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "client/public/vendor.min.js" } },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "client/src/gql/__generated__/types.ts" } },
+    { "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": { "file_path": "db/drizzle/meta/0003_snapshot.json" } },
     {
       "hook_event_name": "PreToolUse",
       "tool_name": "Edit",
@@ -440,7 +446,24 @@
       "hook_event_name": "PreToolUse",
       "tool_name": "Read",
       "tool_input": {
-        "file_path": "package-lock.json"
+        "file_path": "package-lock.json",
+        "limit": 50
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "client/dist/assets/index.js",
+        "offset": 1,
+        "limit": 40
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "server/src/build-report.ts"
       }
     },
     {

@@ -10,11 +10,11 @@ export const HOOKS_DIR = join(here, '..');
 
 export const fixture = (name) => JSON.parse(readFileSync(join(here, 'fixtures', name), 'utf8'));
 
-export const runHook = (hook, event, root = process.cwd()) => {
+export const runHook = (hook, event, root = process.cwd(), env = {}) => {
   const res = spawnSync(process.execPath, [join(HOOKS_DIR, hook)], {
     input: JSON.stringify(event),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: root, ...env },
     timeout: 120_000,
   });
 
