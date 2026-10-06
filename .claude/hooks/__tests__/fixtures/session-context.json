@@ -1,0 +1,4 @@
+{
+  "startup": { "hook_event_name": "SessionStart", "source": "startup", "session_id": "test", "cwd": "." },
+  "resume": { "hook_event_name": "SessionStart", "source": "resume", "session_id": "test", "cwd": "." }
+}

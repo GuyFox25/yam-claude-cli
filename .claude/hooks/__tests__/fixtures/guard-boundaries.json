@@ -1,0 +1,397 @@
+{
+  "blocked": [
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": ".env",
+        "content": "SECRET=1"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "server/.env.local",
+        "old_string": "A",
+        "new_string": "B"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "pnpm-lock.yaml",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "package-lock.json",
+        "content": "{}"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": ".claude/settings.json",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "db/drizzle/0000_init.sql",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "db/prisma/migrations/20240101_init/migration.sql",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/users.service.ts",
+        "content": "import { eq } from 'drizzle-orm';\nexport const x = 1;\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "server/src/app.ts",
+        "old_string": "//",
+        "new_string": "import { PrismaClient } from \"@prisma/client\";"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "server/src/pool.ts",
+        "old_string": "//",
+        "new_string": "const { Pool } = require('pg');"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "server/package.json",
+        "old_string": "\"dependencies\": {",
+        "new_string": "\"dependencies\": {\n    \"drizzle-orm\": \"^0.30.0\","
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/legacy.js",
+        "content": "const knex = require('knex');\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/mongo.ts",
+        "content": "import { MongoClient } from 'mongodb';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/user.model.ts",
+        "content": "import mongoose from 'mongoose';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "node_modules/@acme/ui/dist/index.js",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "client/node_modules/lodash/index.js",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/users.ts",
+        "content": "import { findUsers } from '../../../db/src/users';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/Old.jsx",
+        "content": "import { app } from '../../server/src/app';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/orders.js",
+        "content": "const db = require('db');\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "Api/Migrations/20240101_Init.cs",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "Api/Migrations/AppDbContextModelSnapshot.cs",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "Api/packages.lock.json",
+        "content": "{}"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/users.ts",
+        "content": "import { findUsers } from '../../../db';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/legacy/Old.jsx",
+        "content": "const server = require('../../server');\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/raw.ts",
+        "content": "import { Pool } from 'pg';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": ".env.production",
+        "content": "A=1"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "MultiEdit",
+      "tool_input": {
+        "file_path": "server/src/app.ts",
+        "edits": [
+          {
+            "old_string": "//",
+            "new_string": "// ok"
+          },
+          {
+            "old_string": "x",
+            "new_string": "import mongoose from 'mongoose';"
+          }
+        ]
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": ".env"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "server/.env.production"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "config/secrets/api-key.json"
+      }
+    }
+  ],
+  "allowed": [
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/drizzle/0001_add_users.sql",
+        "content": "CREATE TABLE users ();"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/repos/users.repo.ts",
+        "content": "import { eq } from 'drizzle-orm';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/models/user.model.ts",
+        "content": "import { Schema, model } from 'mongoose';\nimport { MongoClient } from 'mongodb';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/users.controller.ts",
+        "content": "import { userSchema } from '@app/utils';\nimport { dbClient } from './db-client';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Edit",
+      "tool_input": {
+        "file_path": "client/src/App.tsx",
+        "old_string": "a",
+        "new_string": "b"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": ".claude/settings.local.json",
+        "content": "{}"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/pg-notes.md",
+        "content": "We use postgres via the db package."
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/Data/UsersRepository.cs",
+        "content": "using Microsoft.EntityFrameworkCore;\n// from 'pg' is not a C# import\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "Api/Migrations/20240202_AddUsers.cs",
+        "content": "public partial class AddUsers : Migration {}\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/users.ts",
+        "content": "import type { User } from 'utils';\nimport { http } from '../http';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/components/UserList.jsx",
+        "content": "import React, { Component } from 'react';\nexport default class UserList extends Component {}\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": ".env.example",
+        "content": "DATABASE_URL=postgres://user:pass@localhost:5432/app_dev\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/api/database-view.ts",
+        "content": "import { dbLabel } from './db-labels';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": ".env.example"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "package-lock.json"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": ".claude/settings.json"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Read",
+      "tool_input": {
+        "file_path": "db/drizzle/0000_init.sql"
+      }
+    }
+  ]
+}

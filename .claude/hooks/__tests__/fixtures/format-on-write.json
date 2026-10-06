@@ -1,0 +1,5 @@
+{
+  "clean": { "hook_event_name": "PostToolUse", "tool_name": "Write", "tool_input": { "file_path": "client/src/good.ts" }, "tool_response": { "success": true } },
+  "lintError": { "hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": { "file_path": "client/src/bad.ts" }, "tool_response": { "success": true } },
+  "unsupported": { "hook_event_name": "PostToolUse", "tool_name": "Write", "tool_input": { "file_path": "client/public/logo.png" }, "tool_response": { "success": true } }
+}

@@ -1,0 +1,13 @@
+# Claude Code: personal, never committed
+.claude/settings.local.json
+CLAUDE.local.md
+
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Generated per session from installed in-house libraries (lib-info sync-agents).
+# A hand-written agent with the same name wins over the generated one, but name it differently
+# (e.g. acme-ui-expert.md) if it should be committed: this pattern ignores every lib-*.md.
+.claude/agents/lib-*.md

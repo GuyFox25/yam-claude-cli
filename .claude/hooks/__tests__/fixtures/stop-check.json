@@ -1,0 +1,4 @@
+{
+  "stop": { "hook_event_name": "Stop", "session_id": "test", "stop_hook_active": false },
+  "reentry": { "hook_event_name": "Stop", "session_id": "test", "stop_hook_active": true }
+}
