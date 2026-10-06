@@ -91,7 +91,7 @@ The hooks guard the Edit/Write tools. Never work around them with shell commands
 
 The full rules are in `.claude/rules/`:
 - JS/TS (`code-style.md`): arrow functions, import order, small functions, comments, library lookup order. The project's ESLint config wins where it differs.
-- React (`react.md`): function components with hooks, component folders, SOLID, validated forms. **Existing class components stay classes** unless the user asks to convert them.
+- React (`react.md`): function components with hooks, component folders, SOLID, react-hook-form forms, API data through the yam-lib / mador-yam-* react-query extensions. **Existing class components stay classes** unless the user asks to convert them.
 - Backend (`backend.md`): Zod at every boundary, precise errors in one shape, controller → service → db, dependency injection.
 - C# (`csharp.md`): follow the existing solution; async with `Async` suffix; parameterized SQL only.
 

@@ -19,7 +19,8 @@ The `Stack:` line says `client=react-ts` (TSX, function components) or `client=r
   - Never invent service paths, entity sets or field names. Take them from the code, saved `$metadata`, or the user.
   - Fetch the `x-csrf-token` before writes, and escape `$filter` values (double the single quotes, then `encodeURIComponent`).
   - Map SAP field names (often UPPER_CASE or with SAP prefixes) to UI models in the API layer, not in components.
-- For server state, use whatever the package already uses (React Query, SWR, RTK Query, Redux thunks, ...). Don't add a second one.
+- Server state: the standard is the react-query extensions in yam-lib and `mador-yam-*` (ask their `lib-*` agent), with plain React Query for anything they don't cover. In an older client that uses something else (SWR, RTK Query, Redux thunks), keep that and don't add a second one.
+- Forms: react-hook-form, with the existing schema library (Zod or Yup) through its resolver.
 
 ## In-house libraries
 UI kits and helpers from the company libraries come first. Before using one, ask its `lib-<name>` agent, or run `node .claude/scripts/lib-info.mjs show <lib>`.

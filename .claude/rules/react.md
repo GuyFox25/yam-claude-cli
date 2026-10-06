@@ -33,8 +33,13 @@ The client is always React. Two styles exist across projects; the session `Stack
 - **Interface segregation:** minimal, specific props. Pass the fields a component uses, not whole entities. No prop drilling 3+ levels; use context or composition.
 - **Dependency inversion:** components never call `fetch` or the API/OData client directly. They use hooks, or services from props or context (see `client/CLAUDE.md`).
 
+## Data from the API
+- Fetch server data with the react-query extensions in yam-lib and `mador-yam-*` (ask their `lib-*` agent for the exact hooks). Use plain `@tanstack/react-query` only for what they don't cover.
+- Wrap each query or mutation in a feature hook (`useOrders`); components never call the query library directly.
+
 ## Forms and user input
-- Validate all user input with the schema library the existing forms use (Zod or Yup). Check them first, and never mix the two.
+- Forms use **react-hook-form** (`useForm`, `Controller` for controlled inputs), plus any form helpers from yam-lib or `mador-yam-*`.
+- Validate all user input with the schema library the existing forms use (Zod or Yup), wired in through the hook-form resolver (`zodResolver` / `yupResolver`). Check the existing forms first, and never mix the two.
 - When the backend validates the same shape, reuse the shared Zod schema from utils instead of writing a new one.
 - Show errors per field, next to the field.
 
