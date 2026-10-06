@@ -29,7 +29,7 @@ Focus: $ARGUMENTS, or the whole repo if none was given. Base everything on the f
    - .NET: thin controllers, data access in its own layer, DTOs rather than entities
    - SAP: the client is the only code in the repo, all OData calls go through its API layer, and ABAP changes go to the SAP team
    - everywhere: existing class components stay classes, and in-house libraries are changed in their own repo, never in `node_modules`
-   - the hooks enforce these rules
+   - the hooks enforce these rules: they block boundary breaks (including controller → db imports and Drizzle schema-barrel imports), ask before adding a dependency or converting a class component, and send advisory style notes after each edit. They also block migrations against non-local databases and whole reads of lockfiles and build output, flag the files affected by a utils change, and keep a local audit log in `.claude/logs/`
 5. **List the real commands** for this repo, using its script names:
    - install, dev/start per package, build
    - typecheck, lint and test, via `node .claude/scripts/check.mjs …` and the raw form

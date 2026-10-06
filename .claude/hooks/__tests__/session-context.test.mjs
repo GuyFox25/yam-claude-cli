@@ -83,3 +83,28 @@ test('package guess uses the earliest keyword in the branch name', () => {
 
   assert.match(res.stdout, /Likely package: server \(from branch name\)/);
 });
+
+test('reports the client form/data libraries and each package ESLint config', () => {
+  const root = makeRepo({
+    committed: {
+      'client/package.json': { name: 'client', dependencies: { 'react-hook-form': '*', zod: '*', 'mador-yam-query': '*', '@tanstack/react-query': '*' } },
+      'client/eslint.config.js': 'export default [];\n',
+      'server/package.json': { name: 'server', dependencies: { express: '*' }, eslintConfig: { extends: 'x' } },
+    },
+  });
+  const res = runHook('session-context.mjs', events.startup, root);
+  cleanup(root);
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.match(res.stdout, /Client libs: forms=react-hook-form\+zod, data=mador-yam-query,@tanstack\/react-query/);
+  assert.match(res.stdout, /ESLint: client=flat, server=eslintrc/);
+});
+
+test('no Client libs line without a client', () => {
+  const root = makeRepo({ committed: STACK });
+  const res = runHook('session-context.mjs', events.startup, root);
+  cleanup(root);
+
+  assert.doesNotMatch(res.stdout, /Client libs:/);
+  assert.match(res.stdout, /ESLint: server=none, db=none/);
+});

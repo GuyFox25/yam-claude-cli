@@ -33,3 +33,19 @@ export const recordEdit = (root, sessionId, rel) => {
 };
 
 export const clearEdits = (root, sessionId) => rmSync(ledgerPath(root, sessionId), { force: true });
+
+// True the first time `key` is seen in this session, false afterwards (one-time notes: ripple, rule injection).
+export const markOnce = (root, sessionId, key) => {
+  const path = ledgerPath(root, sessionId).replace(/edits-([^/\\]+)\.json$/, 'seen-$1.json');
+  let seen = [];
+  try {
+    seen = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    // first note of the session
+  }
+  if (seen.includes(key)) return false;
+  mkdirSync(stateDir(), { recursive: true });
+  writeFileSync(path, JSON.stringify([...seen, key]));
+
+  return true;
+};

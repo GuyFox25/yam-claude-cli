@@ -1,6 +1,9 @@
 # Claude Code: personal, never committed
 .claude/settings.local.json
 CLAUDE.local.md
+# Written by hooks: audit log (audit-log.mjs) and pre-compaction snapshots (precompact-snapshot.mjs)
+.claude/logs/
+.claude/scratch/
 
 node_modules/
 .env

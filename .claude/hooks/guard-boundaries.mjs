@@ -1,10 +1,15 @@
 #!/usr/bin/env node
-// PreToolUse(Read|Edit|Write|MultiEdit): protect secrets (Read: env/secrets only), lockfiles, applied migrations (Drizzle/Prisma/EF Core), settings,
-// installed libraries, and the package boundaries (server has no ORM/SQL; client never imports server, db or DB drivers).
+// PreToolUse(Read|Edit|Write|MultiEdit): protect secrets (Read: env/secrets, plus whole reads of lockfiles, build output and huge files), lockfiles, applied migrations (Drizzle/Prisma/EF Core), settings,
+// installed libraries, and the package boundaries (server has no ORM/SQL and its controllers/routers never call db; client never imports
+// server, db or DB drivers; db imports only utils; utils imports nothing internal; Drizzle tables never come from a schema barrel).
+// Asks the user first when an edit adds a dependency or turns a class component into a function component.
 import { existsSync, realpathSync } from 'node:fs';
-import { basename, extname, join } from 'node:path';
-import { readInput, block, allow } from '../lib/hook-io.mjs';
-import { projectRoot, toPosix, resolveInRoot, IS_WIN, LOCKFILES, migrationDirs, isTracked, isEfMigration, pkgJson } from '../lib/detect.mjs';
+import { basename, dirname, extname, join, resolve } from 'node:path';
+import { readInput, block, allow, ask } from '../lib/hook-io.mjs';
+import { projectRoot, toPosix, resolveInRoot, IS_WIN, LOCKFILES, migrationDirs, isTracked, isEfMigration, pkgJson, packageOf, allDeps, readJson } from '../lib/detect.mjs';
+import { resultAfterEdit } from '../lib/apply-edit.mjs';
+import { importSpecs } from '../lib/imports.mjs';
+import { heavyReason } from '../lib/read-guard.mjs';
 
 const input = await readInput({ strict: true });
 const ti = input?.tool_input ?? {};
@@ -32,6 +37,9 @@ const isEnv = nameCmp.startsWith('.env') && !ENV_TEMPLATES.has(nameCmp);
 // Read only needs the secrets check (settings can't exempt .env.example from a `.env.*` deny rule, this hook can).
 if (input?.tool_name === 'Read') {
   if (isEnv || relCmp.split('/').includes('secrets')) block(`Blocked: ${rel} may contain secrets. Never read it; ask the user for the values you need (or read .env.example).`);
+  // A Read with offset/limit (or PDF pages) is a deliberate partial read, so heavy files are allowed then.
+  const heavy = ti.limit == null && ti.offset == null && ti.pages == null ? heavyReason(abs, relCmp) : null;
+  if (heavy) block(`Blocked: ${rel} ${heavy}, so reading it whole wastes context. Use Grep, or Read with offset/limit if you really need it.`);
   allow();
 }
 if (isEnv) block(`Blocked: ${rel} is an env file. Never edit secrets; ask the user to change it (documenting a variable in .env.example is fine).`);
@@ -68,17 +76,106 @@ if (relCmp.startsWith('server/')) {
   }
 }
 
+const specifiers = isCode ? importSpecs(added) : [];
+const ownPackage = rel.split('/')[0];
+
+// First specifier that reaches one of `pkgs`: by package name (`db`, `@app/db/x`) or by a relative path that resolves into its folder.
+const importOfPackages = (pkgs) => {
+  const names = pkgs.map((p) => pkgJson(root, p)?.name).filter(Boolean);
+
+  return specifiers.find((spec) => {
+    if (spec.startsWith('.')) {
+      const target = packageOf(root, resolve(dirname(abs), spec));
+
+      return target !== ownPackage && pkgs.includes(target);
+    }
+
+    return names.some((n) => spec === n || spec.startsWith(`${n}/`));
+  });
+};
+
 if (relCmp.startsWith('client/') && isCode) {
-  const pkgNames = ['server', 'db'].map((p) => pkgJson(root, p)?.name).filter(Boolean).map((n) => n.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'));
-  // '../../db', '../../db/index' and '../server/src/x' alike (index imports have no trailing segment).
-  const upward = added.match(/['"]((?:\.\.\/)+(?:server|db)(?:\/[^'"]*)?)['"]/);
-  const named = pkgNames.length ? added.match(importOf(pkgNames.join('|'))) : null;
-  const match = upward ?? named;
+  const match = importOfPackages(['server', 'db']);
   if (match) {
-    block(`Blocked: client/ must not import server or db code (found "${match[1]}"). Call the backend over HTTP and import shared types from utils/.`);
+    block(`Blocked: client/ must not import server or db code (found "${match}"). Call the backend over HTTP and import shared types from utils/.`);
   }
   const driver = added.match(importOf(DATA_MODULES));
   if (driver) block(`Blocked: client/ must not use an ORM or DB driver (found "${driver[1]}"). The client talks to the backend over HTTP only.`);
+}
+
+if (relCmp.startsWith('utils/') && isCode) {
+  const match = importOfPackages(['client', 'server', 'db']);
+  if (match) block(`Blocked: utils/ must not import other packages of this repo (found "${match}"). utils is the shared base that every package depends on.`);
+}
+
+if (relCmp.startsWith('db/') && isCode) {
+  const match = importOfPackages(['client', 'server']);
+  if (match) block(`Blocked: db/ may import only utils/ (found "${match}"). Move shared types and schemas to utils/.`);
+}
+
+// Every controller/router goes through a service (backend.md), so only services may import the db API.
+const isHttpLayer = /\.(controller|routes?|router)\.[cm]?[jt]sx?$/.test(nameCmp) || /\/(routes|routers|controllers)\//.test(relCmp);
+if (relCmp.startsWith('server/') && isCode && isHttpLayer) {
+  const match = importOfPackages(['db']);
+  if (match) {
+    block(`Blocked: ${rel} is a controller/router and imports the db API directly (found "${match}"). Call a service (<feature>.service.ts) and let the service call db.`);
+  }
+}
+
+// Drizzle tables are imported from their own file (code-style.md), never from the schema barrel.
+const usesDrizzle = () => ['db', 'utils', 'server', '.'].some((p) => 'drizzle-orm' in allDeps(p === '.' ? readJson(join(root, 'package.json')) : pkgJson(root, p)));
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+// `import * as schema from './schema'` (drizzle(client, { schema })) and `export * from` need the whole barrel.
+const isWholeModule = (spec) => new RegExp(`(?:import\\s+\\*\\s+as\\s+\\w+|export\\s+\\*(?:\\s+as\\s+\\w+)?)\\s+from\\s*['"]${escapeRe(spec)}['"]`).test(added);
+// A relative `./schema` that is a single module (server/src/users/schema.ts with Zod schemas) is not a barrel.
+const isSingleFile = (spec) => {
+  const base = resolve(dirname(abs), spec.replace(/\.[cm]?[jt]s$/, ''));
+
+  return !existsSync(base) && ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'].some((ext) => existsSync(`${base}${ext}`));
+};
+if (isCode && /^(db|server|utils)\//.test(relCmp) && usesDrizzle()) {
+  const internal = ['utils', 'db'].map((p) => pkgJson(root, p)?.name).filter(Boolean);
+  const isProjectPath = (spec) => /^(\.|@\/|~\/|#)/.test(spec) || internal.some((n) => spec.startsWith(`${n}/`));
+  const barrel = specifiers.find(
+    (spec) =>
+      isProjectPath(spec) &&
+      /(^|\/)schema(\/index)?(\.[cm]?[jt]s)?$/.test(spec) &&
+      !isWholeModule(spec) &&
+      !(spec.startsWith('.') && !/\/index(\.[cm]?[jt]s)?$/.test(spec) && isSingleFile(spec)),
+  );
+  if (barrel) {
+    block(`Blocked: "${barrel}" is the Drizzle schema barrel. Import each table from its own file: ../schema/<table> in db, <utils package>/schema/<table> from utils (add the subpath to utils' exports if it's missing).`);
+  }
+}
+
+// Asks: never on unparseable edits, and only after every hard block above has passed.
+const CLASS_RE = /\bextends\s+(React\.)?(Pure)?Component\b/;
+const DEP_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
+const depNames = (text) => {
+  try {
+    const json = JSON.parse(text || '{}');
+
+    return new Set(DEP_FIELDS.flatMap((f) => Object.keys(json?.[f] ?? {})));
+  } catch {
+    return null;
+  }
+};
+
+if (relCmp.startsWith('client/') && isCode && existsSync(abs)) {
+  const result = resultAfterEdit(abs, input?.tool_name, ti);
+  if (result && CLASS_RE.test(result.before) && !CLASS_RE.test(result.after)) {
+    ask(`${rel} is a class component and this edit removes the class. Existing class components stay classes unless the user asked to convert them (.claude/rules/react.md).`);
+  }
+}
+
+if (name === 'package.json') {
+  const result = resultAfterEdit(abs, input?.tool_name, ti);
+  const before = result && depNames(result.before);
+  const after = result && depNames(result.after);
+  const addedDeps = before && after ? [...after].filter((d) => !before.has(d)) : [];
+  if (addedDeps.length) {
+    ask(`This edit adds ${addedDeps.length === 1 ? 'a dependency' : 'dependencies'} to ${rel}: ${addedDeps.join(', ')}. New dependencies need the user's approval (.claude/rules/code-style.md), and the lockfile changes only through the package manager.`);
+  }
 }
 
 allow();

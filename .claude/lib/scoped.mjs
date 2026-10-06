@@ -3,7 +3,8 @@
 // - typecheck: the package's typecheck/build runs as usual (types are project-wide), but only errors located
 //   in the given files count; errors elsewhere are reported as a non-blocking note.
 // - test: only tests related to the files (vitest related / jest --findRelatedTests / dotnet test --filter),
-//   or the changed test files themselves for other runners.
+//   or the changed test files themselves for other runners. With testScope 'package': the touched packages' full
+//   suites, where failures outside the related tests are a non-blocking note.
 import { existsSync } from 'node:fs';
 import { basename, extname, join, relative } from 'node:path';
 import {
@@ -25,6 +26,8 @@ const TS_RE = /\.(ts|tsx|mts|cts)$/i;
 const CS_RE = /\.cs$/i;
 const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/i;
 const MAX_OUTPUT = 3000;
+const FULL_SUITE_MIN_MS = 60_000;
+const NOTE_OUTPUT = 1200;
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 const norm = (s) => {
@@ -112,7 +115,35 @@ const dotnetTests = (root, files, timeout) => {
   return res.code === 0 ? { status: 'pass', label: `dotnet test --filter ${filter}` } : { status: 'fail', label: `dotnet test --filter ${filter}`, output: clip(res.output) };
 };
 
-const tests = (root, pkg, files, timeout) => {
+// The package's whole test suite (its test script, or dotnet test), or null when it has none.
+const fullSuite = (root, pkg, timeout) => {
+  const plan = resolveCheck(root, pkg, 'test');
+  if (!plan || plan.skip) return null;
+  const res = run(plan.cmd, plan.args, { cwd: plan.cwd, timeout });
+
+  return { code: res.code, label: plan.label, output: res.output };
+};
+
+// Full suite first; when it fails, only the tests related to the files (or the changed test files) decide.
+// Failures elsewhere may be pre-existing or the user's own work, so they are a non-blocking note.
+const packageTests = (root, pkg, files, timeout) => {
+  if (timeout < FULL_SUITE_MIN_MS) {
+    const res = tests(root, pkg, files, timeout);
+
+    return res && { ...res, note: 'full suite skipped (not enough time left); ran the related tests only' };
+  }
+  const started = Date.now();
+  const full = fullSuite(root, pkg, timeout);
+  if (!full) return tests(root, pkg, files, timeout);
+  if (full.code === 0) return { status: 'pass', label: full.label };
+  const related = tests(root, pkg, files, timeout - (Date.now() - started));
+  if (related?.status === 'fail') return { ...related, note: `the full suite (${full.label}) fails too` };
+
+  return { status: 'pass', label: full.label, note: `the full suite (${full.label}) fails, but not in tests related to the files you changed (not blocking):\n${full.output.replace(ANSI, '').trim().slice(-NOTE_OUTPUT)}` };
+};
+
+const tests = (root, pkg, files, timeout, { testScope = 'related' } = {}) => {
+  if (testScope === 'package' && files.some((f) => JS_RE.test(f) || CS_RE.test(f))) return packageTests(root, pkg, files, timeout);
   if (pkg === dotnetTarget(root)) return dotnetTests(root, files, timeout);
   const js = files.filter((f) => JS_RE.test(f));
   if (!js.length) return null;
@@ -145,8 +176,10 @@ const tests = (root, pkg, files, timeout) => {
 const CHECKS = { lint, typecheck, test: tests };
 
 // files: posix paths relative to root. kinds: subset of ['lint', 'typecheck', 'test'].
+// testScope 'package' runs each touched package's full test suite, but only failures in the related tests block
+// (related tests alone when it has no test script or time is short); 'related' (default) runs only the related tests.
 // Returns [{ pkg, kind, status: 'pass'|'fail'|'skip', label, output?, note? }].
-export const scopedChecks = (root, files, kinds, { deadline = Date.now() + 600_000 } = {}) => {
+export const scopedChecks = (root, files, kinds, { deadline = Date.now() + 600_000, testScope = 'related' } = {}) => {
   const results = [];
   for (const [pkg, pkgFiles] of groupByPackage(root, files)) {
     for (const kind of kinds) {
@@ -155,7 +188,7 @@ export const scopedChecks = (root, files, kinds, { deadline = Date.now() + 600_0
         results.push({ pkg, kind, status: 'skip', label: kind, output: 'out of time' });
         continue;
       }
-      const res = CHECKS[kind](root, pkg, pkgFiles, remaining);
+      const res = CHECKS[kind](root, pkg, pkgFiles, remaining, { testScope });
       if (res) results.push({ pkg, kind, ...res });
     }
   }
