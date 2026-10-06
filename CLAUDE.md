@@ -68,7 +68,9 @@ Plain-JS packages have no typecheck (skipped). A .NET backend is the `server` ta
 1. **server has no SQL or ORM** (Node). No `drizzle-orm`, `@prisma/client`, `pg`, `mongoose`, `mongodb`, `knex` or similar, and no raw SQL strings or Mongo filters. It calls db's exported functions or service. In .NET, data access stays in its data layer and controllers never query directly.
 2. **Only db uses the ORM.** Queries, transactions, migrations and seeds all live in `db/` (Node).
 3. **Shared types and schemas live in utils.** Request and response DTOs, Zod schemas, enums and DB schema definitions are defined there once. Never duplicate a type in server or client.
-4. **client never imports db or server code.** It only uses HTTP/OData calls plus types from utils.
+4. **client never imports db or server code.** It only uses HTTP/OData calls plus types from utils. **db imports only utils**, and **utils imports no other package** of the repo.
+   - In server, **controllers and routers never import db**; they call a service, and the service calls db.
+   - Drizzle tables are imported from their own file, never from the schema barrel (`../schema`, `<utils>/schema`).
 5. **Changes to utils ripple.** After changing a schema or type in utils, typecheck server, db and client (`check.mjs typecheck --changed` does this automatically).
 6. Validate all external input at the server edge (utils Zod schemas in Node; the project's validation in .NET).
 
@@ -86,6 +88,9 @@ The hooks guard the Edit/Write tools. Never work around them with shell commands
   - `rm -rf`, `git push`, `git reset --hard`, `--force`
   - `curl`/`wget`, and installs from URLs
   - destructive DB commands: `dropdb`, `DROP`/`TRUNCATE` run through `psql`, `dropDatabase()`, `deleteMany({})`, `prisma migrate reset`
+- These edits ask the user first:
+  - adding a dependency to any `package.json`
+  - turning an existing class component into a function component
 
 ## Code style
 
@@ -95,7 +100,7 @@ The full rules are in `.claude/rules/`:
 - Backend (`backend.md`): Zod at every boundary, precise errors in one shape, controller → service → db, dependency injection.
 - C# (`csharp.md`): follow the existing solution; async with `Async` suffix; parameterized SQL only.
 
-Prettier and ESLint (or `dotnet format whitespace` for C#) run automatically after every edit. When you stop, the files **you** changed this session are linted and typechecked (only their errors count) and their related tests run; failures block the stop.
+Prettier and ESLint (or `dotnet format whitespace` for C#) run automatically after every edit. A style hook then checks the lines you added and sends advisory notes, for example `function` declarations, `any`, more than 3 params, commented-out code, unparsed `req.body`, vague errors, or `fetch` inside a component. Fix the notes that apply; ESLint wins where it differs. The session `Client libs:` and `ESLint:` lines tell you which form, data and lint setup to follow. When you stop, the files **you** changed this session are linted and typechecked (only their errors count) and their related tests run; failures block the stop.
 
 Requirements: Claude Code 2.1.47 or newer, Node 18+, and on Windows Git for Windows (hooks run through Git Bash).
 

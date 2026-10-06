@@ -1,0 +1,31 @@
+{
+  "flagged": [
+    { "rule": "`function` keyword", "file_path": "server/src/users.service.ts", "content": "export function getUser(id: string): User {\n  return users[id];\n}\n" },
+    { "rule": "`function` keyword", "file_path": "client/src/List.jsx", "content": "items.map(function (item) { return item.id; });\n" },
+    { "rule": "more than 3 parameters", "file_path": "utils/src/format.ts", "content": "export const format = (a: string, b: number, c: Map<string, number>, d: boolean): string => '';\n" },
+    { "rule": "more than 3 parameters", "file_path": "server/src/orders.service.ts", "content": "class OrdersService {\n  async list(userId: string, limit: number, cursor: string, sort: string): Promise<Order[]> {\n" },
+    { "rule": "commented-out code", "file_path": "server/src/app.ts", "content": "// const old = buildApp();\nconst app = express();\n" },
+    { "rule": "import the folder", "file_path": "client/src/pages/Home.tsx", "content": "import { Button } from '../components/Button/Button';\n" },
+    { "rule": "`any`", "file_path": "db/src/users.repo.ts", "content": "export const toRow = (input: any): UserRow => input as any;\n" },
+    { "rule": "`@ts-ignore`", "file_path": "client/src/App.tsx", "content": "// @ts-ignore\nconst x = y;\n" },
+    { "rule": "raw `req.body`", "file_path": "server/src/routes/users.ts", "content": "router.post('/', async (req, res) => res.json(await usersService.create(req.body)));\n" },
+    { "rule": "vague error", "file_path": "server/src/orders.service.ts", "content": "if (!order) throw new NotFoundException();\n" },
+    { "rule": "vague error", "file_path": "server/src/orders.service.ts", "content": "if (!order) throw new HttpError(404, { message: 'Not found' });\n" },
+    { "rule": "stack trace", "file_path": "server/src/middleware/errors.ts", "content": "res.status(500).json({ error: err.stack });\n" },
+    { "rule": "`new` on a service", "file_path": "server/src/orders/orders.controller.ts", "content": "private readonly service = new OrdersService();\n" },
+    { "rule": "calls the HTTP client directly", "file_path": "client/src/components/Orders.tsx", "content": "useEffect(() => { fetch('/api/orders').then(setOrders); }, []);\n" },
+    { "rule": "calls the HTTP client directly", "file_path": "client/src/pages/Orders.jsx", "content": "const load = () => axios.get('/api/orders');\n" }
+  ],
+  "clean": [
+    { "file_path": "server/src/users.service.ts", "content": "export const getUser = async (id: string): Promise<User> => {\n  const user = await findUser(id);\n\n  return user;\n};\n" },
+    { "file_path": "server/src/routes/users.ts", "content": "const body = createUserSchema.parse(req.body);\nif (typeof cb === 'function') cb();\n" },
+    { "file_path": "server/src/orders.service.ts", "content": "throw new NotFoundException(`Order ${id} not found`);\nemitter.on('error', log);\n" },
+    { "file_path": "server/src/orders.module.ts", "content": "class OrdersController {\n  constructor(private readonly a: A, private readonly b: B, private readonly c: C, private readonly d: D) {}\n}\n" },
+    { "file_path": "client/src/api/orders.ts", "content": "export const getOrders = (): Promise<Order[]> => fetch('/api/orders').then((r) => r.json());\n" },
+    { "file_path": "client/src/pages/Home.tsx", "content": "import { Button } from '../components/Button';\n// Retries twice because the gateway drops the first call after a deploy.\n" },
+    { "file_path": "client/src/legacy/Old.jsx", "content": "const value: any = 1;\n" },
+    { "file_path": "server/src/users.test.ts", "content": "it('rejects', () => request(app).post('/users').send(req.body));\n" },
+    { "file_path": "server/README.md", "content": "function x() {}\n" },
+    { "file_path": "client/src/types.d.ts", "content": "declare function legacy(a: any): void;\n" }
+  ]
+}

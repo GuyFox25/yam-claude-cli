@@ -6,6 +6,18 @@ export const block = (message) => {
 
 export const allow = () => process.exit(0);
 
+// PreToolUse: let the user confirm the action instead of blocking it.
+export const ask = (reason) => {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } }));
+  process.exit(0);
+};
+
+// Non-blocking note added to Claude's context (PostToolUse, SessionStart, ...).
+export const advise = (event, text) => {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }));
+  process.exit(0);
+};
+
 // strict: guard hooks fail closed (block) on unparseable input instead of silently allowing.
 export const readInput = async ({ strict = false } = {}) => {
   let raw = '';

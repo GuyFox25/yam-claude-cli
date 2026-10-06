@@ -201,7 +201,7 @@
       "tool_name": "Write",
       "tool_input": {
         "file_path": "client/src/legacy/Old.jsx",
-        "content": "const server = require('../../server');\n"
+        "content": "const server = require('../../../server');\n"
       }
     },
     {
@@ -256,6 +256,70 @@
       "tool_name": "Read",
       "tool_input": {
         "file_path": "config/secrets/api-key.json"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/repos/orders.repo.ts",
+        "content": "import { users } from '../schema';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/repos/orders.repo.ts",
+        "content": "import { users } from '../schema/index.ts';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/users.service.ts",
+        "content": "import { users } from '@app/utils/schema';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/routes/users.ts",
+        "content": "import { findUsers } from 'db';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/users.controller.ts",
+        "content": "import { findUsers } from '../../db/src/users';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "utils/src/index.ts",
+        "content": "export { findUsers } from 'db';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "utils/src/types.ts",
+        "content": "import type { App } from '../../server/src/app';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/index.ts",
+        "content": "import { app } from '../../server/src/app';\n"
       }
     }
   ],
@@ -391,6 +455,46 @@
       "tool_name": "Read",
       "tool_input": {
         "file_path": "db/drizzle/0000_init.sql"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/repos/orders.repo.ts",
+        "content": "import { users } from '../schema/users';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/users.service.ts",
+        "content": "import { findUsers } from 'db';\nimport { users } from '@app/utils/schema/users';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "client/src/features/orders/view.ts",
+        "content": "import { dbLabel } from '../db/labels';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "db/src/index.ts",
+        "content": "import { userSchema } from '@app/utils';\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/forms.ts",
+        "content": "import { object } from 'yup/schema';\n"
       }
     }
   ]

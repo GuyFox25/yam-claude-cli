@@ -165,6 +165,32 @@ export const detectClient = (root) => {
   return { lang: ts ? 'ts' : 'js', classComponents };
 };
 
+// The client's form and server-state libraries, from its dependencies: { forms, data } (null entries when none).
+// forms: react-hook-form+zod | react-hook-form+yup | react-hook-form | formik. data: in-house query libs first, then the rest.
+export const detectClientLibs = (root) => {
+  const json = pkgJson(root, 'client');
+  if (!json) return null;
+  const deps = allDeps(json);
+  const schema = ['zod', 'yup'].filter((n) => n in deps).join('+');
+  const forms = 'react-hook-form' in deps ? `react-hook-form${schema ? `+${schema}` : ''}` : 'formik' in deps ? 'formik' : null;
+  const inHouse = Object.keys(deps).filter((n) => /^(@[\w-]+\/)?(yam-lib|mador-yam-[\w-]+)$/.test(n));
+  const known = ['@tanstack/react-query', 'react-query', 'swr', '@reduxjs/toolkit', 'redux'].filter((n) => n in deps);
+  const data = [...inHouse, ...known];
+
+  return { forms, data: data.length ? data.join(',') : null };
+};
+
+// flat | eslintrc | null for a package (its own config, else the root's). Its rules win over .claude/rules.
+export const detectEslintConfig = (root, pkg) => {
+  for (const dir of [join(root, pkg), root]) {
+    const files = existsSync(dir) ? readdirSync(dir) : [];
+    if (files.some((f) => /^eslint\.config\.(js|mjs|cjs|ts|mts|cts)$/.test(f))) return 'flat';
+    if (files.some((f) => /^\.eslintrc(\.(js|cjs|json|yaml|yml))?$/.test(f)) || readJson(join(dir, 'package.json'))?.eslintConfig) return 'eslintrc';
+  }
+
+  return null;
+};
+
 // xunit | nunit | mstest, from PackageReference entries in the solution's csproj files.
 export const detectDotnetTestFramework = (root) => {
   const dn = dotnetProject(root);
