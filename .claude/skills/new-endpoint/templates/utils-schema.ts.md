@@ -21,6 +21,8 @@ export const matchSchema = z.object({
   createdAt: z.coerce.date(),
 });
 
+export const createMatchSchema = matchSchema.pick({ title: true, startsAt: true });
+
 export const listUserMatchesResponseSchema = z.object({
   items: z.array(matchSchema),
   nextCursor: z.string().nullable(),
@@ -30,6 +32,7 @@ export type UserIdParams = z.infer<typeof userIdParamsSchema>;
 export type ListUserMatchesQuery = z.infer<typeof listUserMatchesQuerySchema>;
 export type Match = z.infer<typeof matchSchema>;
 export type ListUserMatchesResponse = z.infer<typeof listUserMatchesResponseSchema>;
+export type CreateMatchInput = z.infer<typeof createMatchSchema>;
 ```
 
 Notes: the API surface uses camelCase and the DB uses snake_case, and db does the mapping. Use `z.coerce.date()` for anything that crosses JSON.

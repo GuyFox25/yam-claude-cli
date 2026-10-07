@@ -3,7 +3,7 @@ name: commit
 description: Write a Conventional Commit message for the current changes and commit only after the user confirms. Use when the user asks to commit, or says the work is ready to commit.
 argument-hint: "[optional hint for the message or scope]"
 disable-model-invocation: true
-allowed-tools: Read, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(node .claude/scripts/check.mjs:*)
+allowed-tools: Read, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Bash(git switch:*), Bash(node .claude/scripts/check.mjs:*)
 ---
 
 # Commit
@@ -11,11 +11,12 @@ allowed-tools: Read, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash
 Hint from the user: $ARGUMENTS
 
 1. **Inspect.** Run `git status`, `git diff --staged` and `git diff`, then `git log --oneline -10` to see this repo's message style.
+   - If the current branch is `main` (or the default branch), propose a branch named `<type>/<package>-<short-desc>` (CLAUDE.md § Branches and commits) and create it with `git switch -c` once the user agrees. The uncommitted changes move with it.
 2. **Check the scope.**
    - If nothing is staged, propose which files to stage. Never stage `.env*`, secrets, build output or unrelated changes.
    - If the changes span unrelated concerns, propose splitting them into several commits.
    - A migration must be committed together with its schema change.
-3. **Verify** with `node .claude/scripts/check.mjs typecheck --changed`, then `lint --changed`. If either fails, report it and stop unless the user says to commit anyway.
+3. **Verify** with `node .claude/scripts/check.mjs typecheck --changed`, then `lint --changed`, then `test --changed`. If any of them fails, report it and stop unless the user says to commit anyway.
 4. **Write the message:**
    ```
    <type>(<scope>): <imperative summary, lowercase, ≤72 chars, no period>

@@ -114,8 +114,10 @@ if (relCmp.startsWith('db/') && isCode) {
 }
 
 // Every controller/router goes through a service (backend.md), so only services may import the db API.
+// Tests next to them import the db package to mock it (testing.md), so they are exempt.
 const isHttpLayer = /\.(controller|routes?|router)\.[cm]?[jt]sx?$/.test(nameCmp) || /\/(routes|routers|controllers)\//.test(relCmp);
-if (relCmp.startsWith('server/') && isCode && isHttpLayer) {
+const isTestFile = /\.(test|spec)\.[cm]?[jt]sx?$/.test(nameCmp) || /\/(__tests__|__mocks__)\//.test(relCmp);
+if (relCmp.startsWith('server/') && isCode && isHttpLayer && !isTestFile) {
   const match = importOfPackages(['db']);
   if (match) {
     block(`Blocked: ${rel} is a controller/router and imports the db API directly (found "${match}"). Call a service (<feature>.service.ts) and let the service call db.`);

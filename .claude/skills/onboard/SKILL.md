@@ -30,6 +30,8 @@ Focus: $ARGUMENTS, or the whole repo if none was given. Base everything on the f
    - SAP: the client is the only code in the repo, all OData calls go through its API layer, and ABAP changes go to the SAP team
    - everywhere: existing class components stay classes, and in-house libraries are changed in their own repo, never in `node_modules`
    - the hooks enforce these rules: they block boundary breaks (including controller → db imports and Drizzle schema-barrel imports), ask before adding a dependency or converting a class component, and send advisory style notes after each edit. They also block migrations against non-local databases and whole reads of lockfiles and build output, flag the files affected by a utils change, and keep a local audit log in `.claude/logs/`
+   - the conventions live in `.claude/rules/` (code-style, react, backend, db, testing, csharp): name the ones that apply to this stack and the few that surprise newcomers most (for example react-hook-form forms, yam-lib / mador-yam-* query hooks, controller → service → db, one error shape). Point to the session `Client libs:` and `ESLint:` lines for this repo's form, data and lint setup.
+   - the rest of the loop: rule key points are injected when a prompt mentions migrations, endpoints, tests or components, and when Claude stops, the files it changed are linted and typechecked and their related tests run
 5. **List the real commands** for this repo, using its script names:
    - install, dev/start per package, build
    - typecheck, lint and test, via `node .claude/scripts/check.mjs …` and the raw form

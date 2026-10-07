@@ -14,9 +14,11 @@ The base is `$ARGUMENTS`, or `main` if no argument was given. Nothing is pushed 
    - `git log --oneline <base>..HEAD`
    - `git diff --stat <base>...HEAD`
    - `git diff <base>...HEAD`
-2. **Run the agents in parallel** (one message, two Agent calls):
+2. **Run the agents in parallel** (one message, one Agent call each):
    - `code-reviewer`: "Review the diff <base>...HEAD."
    - `test-runner`: "Run typecheck, lint and tests for: <packages>." List the packages explicitly, from the top folders in `git diff --name-only <base>...HEAD` (client, server, db, utils; a .NET change is `server`, or `dotnet` if `server/` is a Node package; a utils change adds every Node package). `--changed` only sees uncommitted files, so it would report nothing on a committed branch.
+   - `architecture-guard`, only when the diff touches more than one package or touches utils: "Check the architecture rules for these changed files: <files>."
+   - `security-reviewer`, only when the diff touches routes or controllers, auth, db queries, file handling or config: "Review these changed files: <files>."
 3. **Classify the changes**:
    - by package (client, server, db, utils)
    - API contract changes (utils schemas)
@@ -27,5 +29,5 @@ The base is `$ARGUMENTS`, or `main` if no argument was given. Nothing is pushed 
    - Title in Conventional Commit form, for example `feat(server): add user matches endpoint`.
    - Summarize the *why*. Use the commit messages and the branch name for context.
    - Keep it factual and draw only from the diff. Delete template sections that don't apply instead of writing "N/A".
-   - Put the agents' outcomes in **Checks**: test-runner's pass/fail per package, and code-reviewer's Critical and Should-fix items. If there are Critical findings, say so at the top and recommend fixing them before opening the PR.
+   - Put the agents' outcomes in **Checks**: test-runner's pass/fail per package, code-reviewer's Critical and Should-fix items, and the architecture-guard violations and security-reviewer High/Medium findings when those ran. If there are Critical, violation or High findings, say so at the top and recommend fixing them before opening the PR.
 5. **Output** the final markdown in a fenced block, ready to paste.

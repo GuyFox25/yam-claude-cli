@@ -364,6 +364,22 @@
     },
     {
       "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/routes/users.test.ts",
+        "content": "import * as dbApi from 'db';\n\nvi.mock('db');\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
+      "tool_name": "Write",
+      "tool_input": {
+        "file_path": "server/src/controllers/__tests__/users.controller.spec.ts",
+        "content": "import { findUsers } from 'db';\n\njest.mock('db');\n"
+      }
+    },
+    {
+      "hook_event_name": "PreToolUse",
       "tool_name": "Edit",
       "tool_input": {
         "file_path": "client/src/App.tsx",

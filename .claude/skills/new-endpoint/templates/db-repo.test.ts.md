@@ -1,6 +1,6 @@
 # db query test template
 
-Follow the package's existing DB test setup: a test database with transactions rolled back per test, testcontainers, or a mocked client. Don't invent a new setup. If none exists, ask the user.
+Follow the package's existing DB test setup: a test database with transactions rolled back per test, testcontainers, or a mocked client. Don't invent a new setup. If none exists, ask the user. Every function gets a failure case too (`.claude/rules/testing.md`): an empty or missing result here, and for writes a constraint violation (duplicate, missing FK) that must reject.
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -33,6 +33,15 @@ describe('listUserMatches', () => {
 
     expect(page1.items).toHaveLength(1);
     expect(page1.nextCursor).not.toBeNull();
+  });
+
+  it('returns an empty page for a user without matches', async () => {
+    const user = await seedUser();
+    await seedMatch({ players: [] });
+
+    const res = await listUserMatches(user.id, { limit: 20 });
+
+    expect(res).toEqual({ items: [], nextCursor: null });
   });
 });
 ```

@@ -27,6 +27,7 @@
 - Lint:
 - Tests:
 - Code review: <!-- Critical / Should fix counts and any unresolved items -->
+- Architecture / security: <!-- only if architecture-guard or security-reviewer ran -->
 
 ## Risk & rollout
 <!-- Blast radius, rollback plan, follow-ups. -->

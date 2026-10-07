@@ -1,6 +1,6 @@
 # db query template
 
-Path: mirror the existing layout, for example `db/src/repositories/<feature>.repo.ts`. Export it from the db entry point. This is the **only** layer that imports the ORM.
+Path: mirror the existing layout, for example `db/src/repositories/<feature>.repo.ts`. Export it from the db entry point. This is the **only** layer that imports the ORM. The server templates also call `getUserById`; use the existing one, or add it the same way (a single-row select that returns the utils `User` or `null`).
 
 ## Drizzle
 
@@ -59,13 +59,12 @@ export const listUserMatches = async (userId: string, query: ListUserMatchesQuer
 
 ## Mongoose (MongoDB)
 
+The model (`db/src/models/match.model.ts`) is `new Schema({ title: String, startsAt: Date, playerIds: [Schema.Types.ObjectId] }, { timestamps: true })` with `matchSchema.index({ playerIds: 1, startsAt: -1 }, { name: 'idx_matches_playerIds_startsAt' })`: equality first, then the sort/range field (ESR).
+
 ```ts
 import { Types } from 'mongoose';
 import type { ListUserMatchesQuery, ListUserMatchesResponse, Match } from '<utils package name>';
 import { MatchModel, type MatchDoc } from '../models/match.model';
-
-// Model (db/src/models/match.model.ts): new Schema({ title: String, startsAt: Date, playerIds: [Schema.Types.ObjectId] }, { timestamps: true })
-// plus matchSchema.index({ playerIds: 1, startsAt: -1 }, { name: 'idx_matches_playerIds_startsAt' })  // ESR: equality, then sort/range
 
 const toMatch = (doc: MatchDoc & { _id: Types.ObjectId }): Match => ({
   id: doc._id.toString(),

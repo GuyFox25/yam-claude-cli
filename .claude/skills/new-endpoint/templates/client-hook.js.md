@@ -1,6 +1,14 @@
 # client API function and hook template (plain JS / JSX clients)
 
-For legacy JS clients: no TypeScript syntax, and new hooks and components are function components. Reuse the existing HTTP or OData helper and the data-fetching approach the client already has. A plain `useEffect` hook is shown here; use React Query, Redux thunks or similar if that's what the project uses.
+For legacy JS clients: no TypeScript syntax (`.claude/rules/code-style.md`), and new hooks and components are function components (`.claude/rules/react.md`). Reuse the existing HTTP or OData helper.
+
+Which hook to write depends on the `Client libs:` session line (`data=`):
+- yam-lib / `mador-yam-*`: use their react-query extensions (ask their `lib-*` agent for the hook names) in the same feature-hook shape as below.
+- `@tanstack/react-query` only: the React Query hook below.
+- Another library (SWR, RTK Query, Redux thunks): follow the existing hooks that use it. Don't add a second one.
+- `none`: the `useEffect` fallback at the end. Adding a data library is a new dependency and needs the user's approval.
+
+`createMatch` / `useCreateMatch` are for endpoints with a write route only. Scaffold them together with their server route, db function and tests; for a read-only endpoint, leave them out.
 
 ## REST backend (Node / .NET)
 ```js
@@ -14,6 +22,8 @@ export const fetchUserMatches = async (userId, query = {}) => {
 
   return json;
 };
+
+export const createMatch = async (input) => apiFetch('/matches', { method: 'POST', body: JSON.stringify(input) });
 ```
 
 ## SAP OData backend
@@ -34,7 +44,40 @@ export const fetchOrders = async (customerId) => {
 };
 ```
 
-## Hook
+## Hooks (React Query)
+```js
+// client/src/hooks/useUserMatches.js
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createMatch, fetchUserMatches } from '../api/matches';
+
+export const userMatchesKey = (userId) => ['users', userId, 'matches'];
+
+export const useUserMatches = (userId) =>
+  useQuery({ queryKey: userMatchesKey(userId), queryFn: () => fetchUserMatches(userId), enabled: Boolean(userId) });
+
+export const useCreateMatch = (userId) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createMatch,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: userMatchesKey(userId) }),
+  });
+};
+```
+
+## Using it from an existing class component
+Hooks can't be called inside a class. Don't convert the class; render a small function child, or pass the data in as props:
+```jsx
+// client/src/components/UserMatchesLoader.jsx
+import { useUserMatches } from '../hooks/useUserMatches';
+
+export const UserMatchesLoader = ({ userId, children }) => children(useUserMatches(userId));
+
+// inside the class component's render():
+// <UserMatchesLoader userId={this.props.userId}>{({ data, isLoading, error }) => ...}</UserMatchesLoader>
+```
+
+## Fallback: no data library (`data=none`)
 ```js
 // client/src/hooks/useUserMatches.js
 import { useEffect, useState } from 'react';
@@ -44,7 +87,11 @@ export const useUserMatches = (userId) => {
   const [state, setState] = useState({ data: null, error: null, loading: Boolean(userId) });
 
   useEffect(() => {
-    if (!userId) return undefined;
+    if (!userId) {
+      setState({ data: null, error: null, loading: false });
+
+      return undefined;
+    }
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: null }));
     fetchUserMatches(userId)
@@ -59,12 +106,4 @@ export const useUserMatches = (userId) => {
   return state;
 };
 ```
-
-## Using it from an existing class component
-Hooks can't be called inside a class. Don't convert the class; render a small function child, or pass the data in as props:
-```jsx
-const UserMatchesLoader = ({ userId, children }) => children(useUserMatches(userId));
-
-// inside the class component's render():
-// <UserMatchesLoader userId={this.props.userId}>{({ data, loading, error }) => ...}</UserMatchesLoader>
-```
+This hook returns `{ data, error, loading }` instead of React Query's `{ data, error, isLoading }`. Match the loader and the tests to it.

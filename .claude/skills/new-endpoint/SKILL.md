@@ -61,7 +61,7 @@ Then follow the section for the backend variant.
 - Use the data-fetching library the client already uses. Wire it into the UI only if the user asked, and handle the loading, empty and error states.
   - New components are function components.
   - When the consumer is an existing class component, keep it a class and pass the data in, using the loader pattern in the JS template.
-- Add a test (`templates/client-hook.test.tsx.md`; write it as `.test.jsx` in JS clients).
+- Add a test (`templates/client-hook.test.md`: the TSX section for TS clients, the JSX section for JS clients).
 - Run `check.mjs typecheck client` (skipped for JS) and `check.mjs test client`.
 
 ## Finish
