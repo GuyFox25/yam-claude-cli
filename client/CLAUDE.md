@@ -23,7 +23,7 @@ The `Stack:` line says `client=react-ts` (TSX, function components) or `client=r
 - Forms: react-hook-form, with the existing schema library (Zod or Yup) through its resolver.
 
 ## In-house libraries
-UI kits and helpers from the company libraries come first. Before using one, ask its `lib-<name>` agent, or run `node .claude/scripts/lib-info.mjs show <lib>`.
+First check the repo for an existing component, hook or helper: utils and the client's `global/` folders (also `shared/`, `common/`). If nothing fits, the company libraries' UI kits and helpers come next. Before using one, ask its `lib-<name>` agent, or run `node .claude/scripts/lib-info.mjs show <lib>`.
 
 ## Commands
 ```bash

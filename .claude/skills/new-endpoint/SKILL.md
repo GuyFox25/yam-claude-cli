@@ -18,7 +18,7 @@ Work strictly in layer order. Finish and check each layer before starting the ne
    - **client**: TS or plain JS, and whether class components are present
    - **ORM** and the **test runner** for each package
 2. Find the most similar existing feature (`Grep` for a sibling resource name) and note its file locations in each layer. Mirror them.
-3. Check whether an in-house library covers part of this, such as an HTTP/OData client or UI table (`lib-info.mjs list`). If one does, ask its `lib-*` agent how to use it.
+3. Search utils and the `global/` (or `shared/`, `common/`) folders for an existing schema, HTTP/OData helper, hook or component that covers part of this, and reuse it. Only for what's left, check whether an in-house library covers part of this, such as an HTTP/OData client or UI table (`lib-info.mjs list`). If one does, ask its `lib-*` agent how to use it.
 4. If any part of the contract is ambiguous, confirm it with the user: method, path, request and response shapes, auth, pagination. **For SAP, also get the OData service, entity set and fields from the user or the existing code; never invent them.**
 
 Then follow the section for the backend variant.
