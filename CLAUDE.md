@@ -58,8 +58,9 @@ Plain-JS packages have no typecheck (skipped). A .NET backend is the `server` ta
 
 ## In-house libraries
 
+- **Repo first.** Before looking in any library, search this repo for something similar, mainly the utils package and `global/` folders (also `shared/`, `common/`). Reuse what's there; go to a library only when nothing fits (`code-style.md`).
 - Each in-house library ships `claude-lib.md` (purpose, API map, usage patterns, gotchas, breaking changes) at its package root. Any installed dependency with that file is discovered automatically.
-- Each one gets a generated expert agent, `lib-<name>` (for example `lib-acme-ui` for `@acme/ui`), refreshed at session start. Use that agent, or `library-expert` for any library, **before** writing code against a library. Don't guess its API.
+- Each one gets a generated expert agent, `lib-<name>` (for example `lib-acme-ui` for `@acme/ui`), refreshed at session start. When the repo has nothing that fits, use that agent, or `library-expert` for any library, **before** writing code against a library. Don't guess its API.
 - Tools: `node .claude/scripts/lib-info.mjs list | show <lib> | api <lib> | usage <lib> | changes <lib>`.
 - Never edit `node_modules/` (blocked). Fix library bugs in the library's repo; for a linked checkout, `lib-info show` prints its path. Keep `claude-lib.md` current with `/lib-doc` in the library repo.
 
@@ -97,7 +98,7 @@ The hooks guard the Edit/Write tools. Never work around them with shell commands
 ## Code style
 
 The full rules are in `.claude/rules/`:
-- JS/TS (`code-style.md`): arrow functions, import order, small functions, comments, library lookup order. The project's ESLint config wins where it differs.
+- JS/TS (`code-style.md`): arrow functions, import order, small functions, comments, lookup order (repo utils and `global/` folders first, then libraries). The project's ESLint config wins where it differs.
 - React (`react.md`): function components with hooks, component folders, SOLID, react-hook-form forms, API data through the yam-lib / mador-yam-* react-query extensions. **Existing class components stay classes** unless the user asks to convert them.
 - Backend (`backend.md`): Zod at every boundary, precise errors in one shape, controller → service → db, dependency injection.
 - C# (`csharp.md`): follow the existing solution; async with `Async` suffix; parameterized SQL only.

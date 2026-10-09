@@ -49,13 +49,16 @@ Separate the groups with a blank line if the file already does.
 - Only for complex calculations, algorithms and non-obvious business rules. Explain **why**, not what.
 - No commented-out code. Delete it; git keeps the history.
 
-## Libraries before new code
-Before you write a helper or add a dependency, look in this order:
-1. Libraries inside this project (utils, shared folders, existing helpers)
-2. yam-lib
-3. `mm-*` packages
-4. `mador-yam-*` packages
-5. Other installed packages
+## Look in the repo first, then libraries
+**Before you look in any library** (asking a `lib-*` agent, running `lib-info`) and before you write a helper, search this repo for something similar:
+- the utils package
+- `global/` folders, plus `shared/`, `common/`, and the existing `hooks/` and `utils/` folders of the package you're working in
+
+Grep/Glob for likely names and for what the code does. If something there fits, reuse or extend it and stop there. Only when nothing fits, continue in this order:
+1. yam-lib
+2. `mm-*` packages
+3. `mador-yam-*` packages
+4. Other installed packages
 
 Check them with `node .claude/scripts/lib-info.mjs list` or the `lib-*` agents. **Ask before adding any new dependency.**
 
