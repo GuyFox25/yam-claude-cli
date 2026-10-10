@@ -1,4 +1,0 @@
-# Claude Code configuration and memory files
-# TODO: replace @OWNER with the owning GitHub user or team (e.g. @org/platform)
-/.claude/       @OWNER
-**/CLAUDE.md    @OWNER

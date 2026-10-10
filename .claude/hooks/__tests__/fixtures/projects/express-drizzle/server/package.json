@@ -1,0 +1,6 @@
+{
+  "name": "@app/server",
+  "private": true,
+  "dependencies": { "express": "^4.19.0", "@app/db": "workspace:*", "@app/utils": "workspace:*" },
+  "devDependencies": { "vitest": "^1.6.0" }
+}

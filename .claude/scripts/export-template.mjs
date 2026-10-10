@@ -6,7 +6,7 @@
 //   last export are deleted again (tracked in .claude/template-manifest.json).
 // - CLAUDE.md (root, plus client/server/db/utils if that folder exists in the project): template part replaced,
 //   the project's "## Project-specific" section kept. Existing content without that heading is moved under it.
-// - .gitignore: missing template lines appended. CODEOWNERS: copied only if the project has none.
+// - .gitignore: missing template lines appended.
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,15 +99,12 @@ for (const pkg of PACKAGES) {
   else notes.push(`${pkg}/ does not exist in the project: ${pkg}/CLAUDE.md skipped.`);
 }
 
-// 3. .gitignore (append missing lines) and CODEOWNERS (only if absent)
+// 3. .gitignore (append missing lines)
 const templateIgnore = readFileSync(join(SRC, '.gitignore'), 'utf8').split(/\r?\n/);
 const destIgnore = existsSync(join(DEST, '.gitignore')) ? readFileSync(join(DEST, '.gitignore'), 'utf8') : '';
 const have = new Set(destIgnore.split(/\r?\n/).map((l) => l.trim()));
 const missing = templateIgnore.filter((l) => l.trim() && !l.startsWith('#') && !have.has(l.trim()));
 if (missing.length) write('.gitignore', `${destIgnore.replace(/\s*$/, '\n')}\n# Claude Code template\n${missing.join('\n')}\n`);
-const owners = ['CODEOWNERS', '.github/CODEOWNERS', 'docs/CODEOWNERS'];
-if (!owners.some((f) => existsSync(join(DEST, f)))) write('CODEOWNERS', readFileSync(join(SRC, 'CODEOWNERS'), 'utf8'));
-else notes.push('CODEOWNERS exists: add the .claude/ and CLAUDE.md owners to it yourself if needed.');
 
 process.stdout.write(
   `${dryRun ? '[export] DRY RUN, nothing written\n' : ''}[export] template ${version} -> ${toPosix(DEST)}\n` +

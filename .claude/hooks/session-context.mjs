@@ -25,6 +25,7 @@ import {
 } from '../lib/detect.mjs';
 import { discoverLibs, syncAgents, agentName } from '../lib/libs.mjs';
 import { readSnapshot } from '../lib/snapshot.mjs';
+import { readJsonl, slowHooks } from '../lib/hook-log.mjs';
 
 const input = await readInput();
 const root = projectRoot();
@@ -114,6 +115,19 @@ const describeSnapshot = () => {
   return snapshot ? ['', 'Pre-compaction snapshot (task, decisions, edited files; trust it over the summary for details):', snapshot] : [];
 };
 
+// Hook timing budget: the recent runs in .claude/logs/hooks.jsonl (written by hook-io) whose p95 is over CLAUDE_HOOK_SLOW_MS.
+const describeSlowHooks = () => {
+  try {
+    const slow = slowHooks(readJsonl(root, 'hooks', { tail: 500 }));
+    if (!slow.length) return [];
+    const items = slow.map((h) => `${h.hook} p95 ${(h.p95 / 1000).toFixed(1)}s (${h.runs} runs)`);
+
+    return [`Slow hooks: ${items.join(', ')}. Tell the user; details: node .claude/scripts/audit-report.mjs`];
+  } catch {
+    return [];
+  }
+};
+
 const pkgs = existingPackages(root);
 const lines = [
   `Branch: ${branch}`,
@@ -125,6 +139,7 @@ const lines = [
   ...describeClientLibs(),
   ...describeEslint(pkgs),
   ...describeLibs(),
+  ...describeSlowHooks(),
   'Run checks with: node .claude/scripts/check.mjs <test|lint|typecheck> [pkg|--changed]',
   ...describeSnapshot(),
 ];

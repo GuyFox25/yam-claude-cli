@@ -14,7 +14,8 @@ export const runHook = (hook, event, root = process.cwd(), env = {}) => {
   const res = spawnSync(process.execPath, [join(HOOKS_DIR, hook)], {
     input: JSON.stringify(event),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_PROJECT_DIR: root, ...env },
+    // The hook log (.claude/logs/hooks.jsonl) would show up as an untracked file in the test repos; tests opt in.
+    env: { ...process.env, CLAUDE_PROJECT_DIR: root, CLAUDE_HOOK_LOG: 'off', ...env },
     timeout: 120_000,
   });
 

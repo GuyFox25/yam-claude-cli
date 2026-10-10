@@ -91,6 +91,7 @@ The hooks guard the Edit/Write tools. Never work around them with shell commands
   - destructive DB commands: `dropdb`, `DROP`/`TRUNCATE` run through `psql`, `dropDatabase()`, `deleteMany({})`, `prisma migrate reset`
   - migrate and seed commands (drizzle-kit, prisma, migrate-mongo, `dotnet ef database update`, and package scripts that run them) when the database URL or connection string points at a non-local host. The hook reads the env files itself and never prints the values. A docker host can be allowed with `CLAUDE_LOCAL_DB_HOSTS` in `settings.local.json` `env`. If no URL is found, the hook asks.
 - Whole-file reads of lockfiles, build output (`dist/`, `build/`, `coverage/`...), minified or generated files, and files over 256 KB are blocked. Use Grep, or Read with `offset`/`limit`.
+- Secrets in written text are blocked: private keys, tokens (AWS, GitHub, Slack, `sk-`, JWT), connection strings with a password, hard-coded credentials. Read them from env/config and document the name in `.env.example`; use placeholders (`<token>`, `***`) in docs and tests.
 - These edits ask the user first:
   - adding a dependency to any `package.json`
   - turning an existing class component into a function component
@@ -103,12 +104,13 @@ The full rules are in `.claude/rules/`:
 - Backend (`backend.md`): Zod at every boundary, precise errors in one shape, controller → service → db, dependency injection.
 - C# (`csharp.md`): follow the existing solution; async with `Async` suffix; parameterized SQL only.
 
-Prettier and ESLint (or `dotnet format whitespace` for C#) run automatically after every edit. A style hook then checks the lines you added and sends advisory notes, for example `function` declarations, `any`, more than 3 params, commented-out code, unparsed `req.body`, vague errors, or `fetch` inside a component. Fix the notes that apply; ESLint wins where it differs. The session `Client libs:` and `ESLint:` lines tell you which form, data and lint setup to follow. When you stop, the files **you** changed this session are linted and typechecked (only their errors count), and the full test suite of each package you touched runs. Only failures in your files or in the tests related to them block the stop. Other suite failures (pre-existing, or the user's own work) are shown to the user as a note. If a package has no test script, only the related tests run.
+Prettier and ESLint (or `dotnet format whitespace` for C#) run automatically after every edit. A style hook then checks the lines you added and sends advisory notes, for example `function` declarations, `any`, more than 3 params, commented-out code, unparsed `req.body`, vague errors, `fetch` inside a component, `console.log`/`debugger`/`.only(`, a new source file without a test, hard-coded UI text (clients with i18n), physical CSS directions (`CLAUDE_HOOK_RTL=on`), or C# `async void`, a missing `Async` suffix and SQL built from strings. Fix the notes that apply; ESLint wins where it differs. The session `Client libs:` and `ESLint:` lines tell you which form, data and lint setup to follow. When you stop, the files **you** changed this session are linted and typechecked (only their errors count), and the full test suite of each package you touched runs. Only failures in your files or in the tests related to them block the stop. Other suite failures (pre-existing, or the user's own work) are shown to the user as a note. If a package has no test script, only the related tests run.
 
 Other hooks:
 - **utils ripple**: after you edit a utils module, a note lists the db, server and client files that import it. Follow the change through them.
 - **rule injection**: a prompt about migrations, endpoints, tests or components gets the key points of the matching `.claude/rules` file, once per session.
 - **audit log**: every tool call (tool, file or command, time, session; never file contents) is appended to `.claude/logs/audit.jsonl` (local, gitignored).
+- **hook log**: every block, ask and advice, and any slow hook run, is logged with its duration to `.claude/logs/hooks.jsonl`. A `Slow hooks:` line at session start means a hook is over budget: tell the user. `node .claude/scripts/audit-report.mjs` summarizes both logs.
 - **compaction snapshot**: before compaction, the prompts, decisions, last plan, todos and edited files are saved to `.claude/scratch/` and printed again afterwards. Trust it over the summary for details.
 - **bell**: a terminal bell and desktop notification fire when Claude waits for you. Turn them off with `CLAUDE_HOOK_BELL=off` in `settings.local.json` `env`.
 
@@ -125,8 +127,8 @@ Requirements: Claude Code 2.1.47 or newer, Node 18+, and on Windows Git for Wind
 
 ## Workflow
 
-- Skills: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/review-guide`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`
-- Agents: `code-reviewer`, `architecture-guard`, `test-runner`, `security-reviewer`, `db-expert`, `library-expert`, plus the generated `lib-*` agents
+- Skills: `/new-endpoint`, `/new-component`, `/odata-call`, `/db-migration`, `/sql-for-pgadmin`, `/write-tests`, `/refactor-safe`, `/upgrade-lib`, `/explain-error`, `/commit`, `/review-guide`, `/pr-description`, `/release-notes`, `/fix-ci`, `/onboard`, `/lib-doc`
+- Agents: `code-reviewer`, `architecture-guard`, `test-runner`, `security-reviewer`, `db-expert`, `migration-reviewer`, `odata-expert`, `a11y-reviewer`, `perf-reviewer`, `library-expert`, plus the generated `lib-*` agents
 - Before you say you're done, run `check.mjs typecheck --changed`, then `lint --changed`, then `test --changed`.
 
 ## Project-specific
