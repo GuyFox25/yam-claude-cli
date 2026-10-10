@@ -1,0 +1,6 @@
+{
+  "name": "server",
+  "private": true,
+  "dependencies": { "express": "^4.19.0", "db": "*" },
+  "devDependencies": { "jest": "^29.7.0" }
+}

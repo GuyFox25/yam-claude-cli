@@ -1,0 +1,6 @@
+{
+  "name": "server",
+  "private": true,
+  "dependencies": { "@nestjs/core": "^10.3.0", "@nestjs/common": "^10.3.0", "db": "*" },
+  "devDependencies": { "jest": "^29.7.0", "ts-jest": "^29.1.0" }
+}

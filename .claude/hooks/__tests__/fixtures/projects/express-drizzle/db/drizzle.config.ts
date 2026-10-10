@@ -1,0 +1,1 @@
+export default { dialect: 'postgresql', schema: './src/schema', out: './drizzle' };
