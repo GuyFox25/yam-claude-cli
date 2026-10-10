@@ -91,7 +91,7 @@ test('Windows path variants (lowercase drive, MSYS /c/...) are still guarded', {
 });
 
 test('invalid hook input fails closed', () => {
-  const res = spawnSync(process.execPath, [join(HOOKS_DIR, 'guard-boundaries.mjs')], { input: '{not json', encoding: 'utf8' });
+  const res = spawnSync(process.execPath, [join(HOOKS_DIR, 'guard-boundaries.mjs')], { input: '{not json', encoding: 'utf8', env: { ...process.env, CLAUDE_HOOK_LOG: 'off' } });
 
   assert.equal(res.status, 2);
 });
