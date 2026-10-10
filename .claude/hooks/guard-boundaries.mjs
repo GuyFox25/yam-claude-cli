@@ -2,7 +2,7 @@
 // PreToolUse(Read|Edit|Write|MultiEdit): protect secrets (Read: env/secrets, plus whole reads of lockfiles, build output and huge files), lockfiles, applied migrations (Drizzle/Prisma/EF Core), settings,
 // installed libraries, and the package boundaries (server has no ORM/SQL and its controllers/routers never call db; client never imports
 // server, db or DB drivers; db imports only utils; utils imports nothing internal; Drizzle tables never come from a schema barrel).
-// Asks the user first when an edit adds a dependency or turns a class component into a function component.
+// Blocks secrets (keys, tokens, passwords) in written text. Asks the user first when an edit adds a dependency or turns a class component into a function component.
 import { existsSync, realpathSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { readInput, block, allow, ask } from '../lib/hook-io.mjs';
@@ -10,6 +10,7 @@ import { projectRoot, toPosix, resolveInRoot, IS_WIN, LOCKFILES, migrationDirs, 
 import { resultAfterEdit } from '../lib/apply-edit.mjs';
 import { importSpecs } from '../lib/imports.mjs';
 import { heavyReason } from '../lib/read-guard.mjs';
+import { findSecrets } from '../lib/secrets.mjs';
 
 const input = await readInput({ strict: true });
 const ti = input?.tool_input ?? {};
@@ -43,6 +44,15 @@ if (input?.tool_name === 'Read') {
   allow();
 }
 if (isEnv) block(`Blocked: ${rel} is an env file. Never edit secrets; ask the user to change it (documenting a variable in .env.example is fine).`);
+// Secrets in the written text: private keys, provider tokens, connection strings with a password, hard-coded credentials.
+const secrets = findSecrets(added);
+if (secrets.length) {
+  const where = secrets
+    .slice(0, 5)
+    .map((s) => `${s.kind} (line ${s.line} of the added text)`)
+    .join(', ');
+  block(`Blocked: the text for ${rel} looks like it contains a secret: ${where}. Never write secrets into files; read them from env/config (process.env.X, IConfiguration) and document the variable name in .env.example. Use an obvious placeholder (<token>, ***) in docs and tests.`);
+}
 if (LOCKFILES.includes(nameCmp)) block(`Blocked: ${rel} is a lockfile. Change dependencies through the package manager (the user approves installs).`);
 if (relCmp === '.claude/settings.json') block('Blocked: .claude/settings.json is team-managed. Propose the change to the user, or use .claude/settings.local.json.');
 // In exported projects .claude/ is managed by the template; only the template repo (which has the marker) edits it.
