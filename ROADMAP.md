@@ -14,7 +14,7 @@ Last updated: 2026-10-10 (after PR #3)
 | Format, style advice, ripple, Stop checks | ✅ Done | Stop blocks only on Claude's own failures |
 | Context helpers (rule injection, compaction snapshot) | ✅ Done | |
 | In-house library experts | ✅ Done | `claude-lib.md` → `lib-*` agents |
-| Rules, skills, agents | ✅ Done (v1) | 6 rules, 8 skills, 6 agents |
+| Rules, skills, agents | ✅ Done (v1) | 6 rules, 9 skills, 6 agents |
 | Export / update into projects | ✅ Done | manifest-based |
 | Docs (README, ROADMAP) | ✅ Done | this file |
 | Pilot in real projects | ⏳ Next | one project per stack |
@@ -35,7 +35,7 @@ The foundation: one config for every stack, detected at runtime instead of assum
 - **Guards**: `guard-bash` (destructive and network commands) and `guard-boundaries` (`.env*`, lockfiles, applied migrations, `node_modules`, package imports).
 - **Feedback**: `format-on-write` (prettier/eslint/dotnet format), `track-edits` + `stop-check`.
 - **In-house libraries**: `claude-lib.md` discovery, [`lib-info.mjs`](.claude/scripts/lib-info.mjs), generated `lib-*` agents, `/lib-doc`.
-- **Skills**: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`.
+- **Skills**: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/review-guide`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`.
 - **Agents**: `code-reviewer`, `security-reviewer`, `architecture-guard`, `db-expert`, `library-expert`, `test-runner`.
 - Per-package `CLAUDE.md` guides, `settings.json` permissions (allow/ask/deny), `CODEOWNERS`, `.gitignore`.
 

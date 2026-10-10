@@ -69,6 +69,7 @@ Packages that don't exist in a project (for example `server/` and `db/` in an SA
 | `/db-migration` | Change the schema, generate a new migration, review the SQL, apply locally, update seeds. | `/db-migration add a nullable cancelled_at to orders` |
 | `/write-tests` | Write and run tests for a file with the detected runner. | `/write-tests client/src/components/OrderCard/OrderCard.tsx` |
 | `/commit` | Write a Conventional Commit message; commits only after you confirm. | `/commit` |
+| `/review-guide` | Write `review/<branch>.md` for the reviewer: manual QA test cases (P1–P3) and ranked review pointers with `file:line`, from the branch diff. | `/review-guide` |
 | `/pr-description` | Run code-reviewer + test-runner, then fill the PR template from `git diff main...HEAD`. | `/pr-description` |
 | `/fix-ci` | Diagnose a pasted CI log and reproduce the failure locally. | `/fix-ci` + paste the log |
 | `/onboard` | Explain the repo, stack, boundaries and how to run everything. | `/onboard` |
@@ -177,7 +178,7 @@ node .claude/scripts/check.mjs lint --files client/src/api/orders.ts
 
 - **Starting a feature:** branch as `<type>/<package>-<short-desc>` (e.g. `feat/client-order-search`). The session hook uses the package in the name.
 - **Adding data flow:** `/new-endpoint`. **Schema change:** `/db-migration`. **Tests:** `/write-tests`.
-- **Before a PR:** ask for the `code-reviewer` (and `security-reviewer` when relevant), then run `/pr-description`.
+- **Before a PR:** ask for the `code-reviewer` (and `security-reviewer` when relevant), then run `/review-guide` and `/pr-description` (it links the guide).
 - **Committing:** `/commit`. Claude asks before every commit and never pushes.
 - **When Claude stops:** the Stop hook checks only what Claude edited. If its own changes break lint, types or related tests, it keeps working. Failures that were already there are shown to you as a note.
 - **SAP projects:** Claude never invents OData services, entity sets or fields. Put saved `$metadata` or service constants in the repo, or tell it. If something needs an ABAP change, it describes the change for the SAP team.
