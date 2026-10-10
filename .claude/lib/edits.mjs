@@ -7,12 +7,16 @@ import { join } from 'node:path';
 
 const stateDir = () => process.env.CLAUDE_HOOK_STATE_DIR || join(tmpdir(), 'claude-hooks');
 
+const projectKey = (root) => createHash('sha1').update(root.toLowerCase()).digest('hex').slice(0, 12);
+
 export const ledgerPath = (root, sessionId) => {
-  const project = createHash('sha1').update(root.toLowerCase()).digest('hex').slice(0, 12);
   const session = String(sessionId || 'default').replace(/[^\w-]/g, '_');
 
-  return join(stateDir(), `edits-${project}-${session}.json`);
+  return join(stateDir(), `edits-${projectKey(root)}-${session}.json`);
 };
+
+// Per-project (not per-session) state next to the ledgers, e.g. the stack cache: <stateDir>/<name>-<project>.json.
+export const statePath = (root, name) => join(stateDir(), `${name}-${projectKey(root)}.json`);
 
 // Posix paths relative to root, in edit order, without duplicates.
 export const readEdits = (root, sessionId) => {

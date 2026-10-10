@@ -26,28 +26,19 @@ import {
 import { discoverLibs, syncAgents, agentName } from '../lib/libs.mjs';
 import { readSnapshot } from '../lib/snapshot.mjs';
 import { readJsonl, slowHooks } from '../lib/hook-log.mjs';
+import { packageFromBranch } from '../lib/branch.mjs';
+import { detectShortStack, writeStackCache } from '../lib/stack-cache.mjs';
 
 const input = await readInput();
 const root = projectRoot();
 const MAX_FILES = 30;
 
-const BRANCH_KEYWORDS = [
-  ['client', /\b(client|ui|web|frontend|fe|front)\b/],
-  ['server', /\b(server|api|backend|be|endpoint|route)s?\b/],
-  ['db', /\b(db|database|migration|schema|seed|sql|orm)s?\b/],
-  ['utils', /\b(utils?|shared|common|types?|zod)\b/],
-];
-
 const branch = git(root, ['branch', '--show-current']).trim() || '(detached HEAD)';
 const dirty = changedFiles(root);
 
 const guessPackage = () => {
-  const words = branch.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
-  // The earliest keyword wins: in <type>/<package>-<desc> the package comes first (fix/server-ui-bug -> server).
-  const hit = BRANCH_KEYWORDS.map(([pkg, re]) => [pkg, words.search(re)])
-    .filter(([, at]) => at !== -1)
-    .sort((a, b) => a[1] - b[1])[0];
-  if (hit) return `${hit[0]} (from branch name)`;
+  const fromBranch = packageFromBranch(branch);
+  if (fromBranch) return `${fromBranch} (from branch name)`;
   const base = defaultBranch(root);
   const committed = base ? git(root, ['diff', '--name-only', `${base}...HEAD`]).split('\n').filter(Boolean) : [];
   const counts = {};
@@ -60,15 +51,18 @@ const guessPackage = () => {
   return top ? `${top[0]} (${top[1]} changed files)` : 'unknown';
 };
 
+// Detected once: used for the Stack: line and cached for the status line.
+const client = detectClient(root);
+const backend = detectBackend(root);
+writeStackCache(root, detectShortStack(root, client, backend));
+
 const describeClient = () => {
-  const client = detectClient(root);
   if (!client) return 'n/a';
 
   return `react-${client.lang}${client.classComponents ? ' (class components present: keep them, new ones are function components)' : ''}`;
 };
 
 const describeBackend = () => {
-  const backend = detectBackend(root);
   if (backend === 'external') return 'external (no server/ in repo, e.g. SAP ABAP via OData; see CLAUDE.md Project-specific)';
   if (backend === 'dotnet') {
     const tests = detectDotnetTestFramework(root);
