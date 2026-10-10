@@ -125,7 +125,7 @@ Requirements: Claude Code 2.1.47 or newer, Node 18+, and on Windows Git for Wind
 
 ## Workflow
 
-- Skills: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`
+- Skills: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/review-guide`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`
 - Agents: `code-reviewer`, `architecture-guard`, `test-runner`, `security-reviewer`, `db-expert`, `library-expert`, plus the generated `lib-*` agents
 - Before you say you're done, run `check.mjs typecheck --changed`, then `lint --changed`, then `test --changed`.
 

@@ -20,6 +20,7 @@
 <!-- New env vars (names only), feature flags, infra changes. -->
 
 ## How to test
+<!-- P1 cases from review/<branch>.md if /review-guide was run, plus a link to it. -->
 1.
 
 ## Checks
