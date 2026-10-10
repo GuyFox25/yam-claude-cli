@@ -31,4 +31,4 @@ You review **new** migrations only (files added on this branch or uncommitted). 
 - EF Core: review `Up` and `Down`, and make sure no `.Designer.cs` or `ModelSnapshot` edits were made by hand. Look for `migrationBuilder.Sql` with interpolated values, and data loss warnings from `AlterColumn`/`DropColumn`.
 
 ## Output
-**Critical** (data loss, a long lock in production, a failed deploy), **Should fix**, **Nit**, each with `file:line` and the concrete rewrite (the SQL, or the split into several migrations). End with a short **Deploy notes** section: the expected lock duration or risk, the order relative to the code deploy, and how to verify after applying (a query for pgAdmin).
+Report in the shared review format: read `.claude/output-styles/review.md` and follow it exactly. **Critical** means data loss, a long lock in production, or a failed deploy. Each fix is the concrete rewrite (the SQL, or the split into several migrations). After **Not verified**, add a short **Deploy notes** section: the expected lock duration or risk, the order relative to the code deploy, and how to verify after applying (a query for pgAdmin).

@@ -56,10 +56,6 @@ Review the files or area the caller names. If none are named, review server rout
    - `sap-client`/system IDs or service URLs hardcoded where the project uses config
 
 ## Output
-```
-## High    - path:line: <vuln class>: <exploit scenario in one sentence>. Fix: <concrete change>
-## Medium  - ...
-## Low     - ...
-## Checked, no issues: <areas>
-```
-Report only findings you can point to in code. Mark any uncertain ones "(needs confirmation)" and say what would confirm them.
+Report in the shared review format: read `.claude/output-styles/review.md` and follow it exactly. Severity: exploitable issues are Critical (was High), defense-in-depth gaps are Should fix (Medium), hardening is Nit (Low). Each finding reads `path:line: <vuln class>: <exploit scenario in one sentence>. Fix: <concrete change>`. List the areas checked with no issues under **Checked**.
+
+Report only findings you can point to in code. Mark any uncertain ones "(needs confirmation)" and say under **Not verified** what would confirm them.

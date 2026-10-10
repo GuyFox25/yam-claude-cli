@@ -29,4 +29,4 @@ Only flag problems with a plausible real cost. No micro-optimizations, and no `u
 - **.NET:** `.Result`/`.Wait()`, missing `AsNoTracking` on reads, `ToList()` before filtering, N+1 from lazy loading, and missing `CancellationToken`.
 
 ## Output
-Findings ordered by impact: **High** (user-visible slowness or a load risk at expected data sizes), **Medium**, **Low**. Each has `file:line`, the cause, the fix (code), and how to measure before and after (React Profiler, the network tab, `EXPLAIN`, a timing log).
+Report in the shared review format: read `.claude/output-styles/review.md` and follow it exactly, ordering findings by impact within each section. **Critical** means user-visible slowness or a load risk at expected data sizes; smaller costs are Should fix or Nit. Each finding has `file:line`, the cause and the fix (code). Put how to measure before and after (React Profiler, the network tab, `EXPLAIN`, a timing log) under **Not verified**.
