@@ -6,8 +6,7 @@ One shared Claude Code setup for all of our React projects, whatever their backe
 yam-claude-cli (this repo)                              your project
 ├── CLAUDE.md, client|server|db|utils/CLAUDE.md   ──►   template part replaced, "## Project-specific" kept
 ├── .claude/ (hooks, skills, agents, rules...)    ──►   copied; protected from edits in the project
-├── .gitignore                                    ──►   missing lines appended
-└── CODEOWNERS                                    ──►   copied only if the project has none
+└── .gitignore                                    ──►   missing lines appended
           node .claude/scripts/export-template.mjs <project-dir>
 ```
 
@@ -148,7 +147,6 @@ What happens:
 - **`.claude/`** is copied, except `template-source.md`, `settings.local.json`, generated `lib-*` agents, hook tests and the export script itself. A `template-manifest.json` records what was copied.
 - **`CLAUDE.md`** (root, plus `client/`, `server/`, `db/`, `utils/` if those folders exist) gets the template content. An existing `## Project-specific` section is kept. Any other existing content is moved under it.
 - **`.gitignore`**: missing template lines are appended.
-- **`CODEOWNERS`** is copied only if the project has none.
 
 Then, in the project:
 1. Fill in each `## Project-specific` section: OData service names and the helper used, data-fetching library, in-house UI library, special scripts, anything unusual.

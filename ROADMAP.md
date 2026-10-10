@@ -37,7 +37,7 @@ The foundation: one config for every stack, detected at runtime instead of assum
 - **In-house libraries**: `claude-lib.md` discovery, [`lib-info.mjs`](.claude/scripts/lib-info.mjs), generated `lib-*` agents, `/lib-doc`.
 - **Skills**: `/new-endpoint`, `/db-migration`, `/write-tests`, `/commit`, `/review-guide`, `/pr-description`, `/fix-ci`, `/onboard`, `/lib-doc`.
 - **Agents**: `code-reviewer`, `security-reviewer`, `architecture-guard`, `db-expert`, `library-expert`, `test-runner`.
-- Per-package `CLAUDE.md` guides, `settings.json` permissions (allow/ask/deny), `CODEOWNERS`, `.gitignore`.
+- Per-package `CLAUDE.md` guides, `settings.json` permissions (allow/ask/deny), `.gitignore`.
 
 ### PR #1: Rules for code style, React and backend
 - [`code-style.md`](.claude/rules/code-style.md): arrow functions, import order, small functions, comments, lookup order.
@@ -82,10 +82,7 @@ Small, concrete items, roughly in priority order.
 - Keep a feedback log (in this repo, e.g. `docs/pilot-feedback.md`): wrong blocks, noisy advice, missing rules, slow hooks.
 - Use `.claude/logs/audit.jsonl` from each pilot to see what Claude actually does.
 
-### 2. Fill in `CODEOWNERS`
-Replace the `@OWNER` placeholder with the owning user or team so changes to `.claude/` and `CLAUDE.md` need review.
-
-### 3. CI for the template
+### 2. CI for the template
 **Why:** 248 tests protect the hooks, but nothing runs them automatically.
 ```yaml
 # .github/workflows/template-tests.yml
@@ -103,17 +100,17 @@ jobs:
 ```
 (Node 18 is the minimum supported version and Windows is the main dev OS, so both belong in the matrix.)
 
-### 4. Template versioning + changelog
+### 3. Template versioning + changelog
 **Why:** with several projects, you need to know which one runs which template version.
 - Add `version` and `exportedAt` to `template-manifest.json` on export.
 - Add `CHANGELOG.md` (generated from Conventional Commits).
 - `session-context` prints `Template: v1.4.0 (exported 2026-10-12)`.
 - Optional: compare with a version the user points to and say "template is 3 versions behind".
 
-### 5. `export-template --check`
+### 4. `export-template --check`
 Report drift without writing anything: files that differ, a missing `Project-specific` section, files deleted in the template, and `.gitignore` lines that are missing. It works like `--dry-run` but exits non-zero, so it can run in project CI.
 
-### 6. Scaffolding gaps in `/new-endpoint`
+### 5. Scaffolding gaps in `/new-endpoint`
 The templates cover TS Express/Nest + a Drizzle-style repo and a JS client hook. Missing:
 | Template | For |
 |----------|-----|
@@ -195,7 +192,7 @@ Open ideas, not commitments.
 
 ## ❓ Open questions
 
-- Who owns the template (`CODEOWNERS`) and reviews changes?
+- Who owns the template and reviews changes?
 - Should projects pin a template version, or always take latest?
 - When does the npm → pnpm move happen, and in which projects first?
 - Is NestJS + Prisma confirmed for an upcoming project? That sets the priority of the Prisma templates.
