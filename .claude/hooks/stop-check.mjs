@@ -3,7 +3,7 @@
 // uncommitted work, and run the full test suites of their packages. Only failures in those files or their related
 // tests block the stop; failures elsewhere (pre-existing, or the user's) are shown to the user as a non-blocking
 // message. Clears the ledger on success.
-import { readInput } from '../lib/hook-io.mjs';
+import { readInput, recordDecision } from '../lib/hook-io.mjs';
 import { projectRoot } from '../lib/detect.mjs';
 import { readEdits, clearEdits } from '../lib/edits.mjs';
 import { scopedChecks } from '../lib/scoped.mjs';
@@ -35,5 +35,6 @@ const reason = [
   ...failures.map((f) => `\n## ${f.pkg} ${f.kind} (${f.label})\n${f.output}`),
   ...(notes.length ? ['\nNotes:', ...notes] : []),
 ].join('\n');
+recordDecision('block', `Stop checks failed: ${failures.map((f) => `${f.pkg} ${f.kind}`).join(', ')}`);
 process.stdout.write(JSON.stringify({ decision: 'block', reason: clipped(reason) }));
 process.exit(0);

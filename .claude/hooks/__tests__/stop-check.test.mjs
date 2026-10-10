@@ -143,7 +143,7 @@ test('check.mjs --files runs file-scoped checks', () => {
   const check = (files) =>
     spawnSync(process.execPath, [join(HOOKS_DIR, '..', 'scripts', 'check.mjs'), 'lint', '--files', ...files], {
       encoding: 'utf8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root, CLAUDE_HOOK_LOG: 'off' },
     });
   const bad = check(['server/src/a.ts']);
   const good = check(['server/src/b.ts']);
