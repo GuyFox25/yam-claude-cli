@@ -98,6 +98,27 @@ Every hook also logs its blocks, asks and advice (plus any run slower than `CLAU
 | `lib-<name>` | — | Generated per in-house library from its `claude-lib.md`. Preferred over `library-expert`. |
 | `test-runner` | haiku | Runs typecheck/lint/tests and returns only failures with likely causes. |
 
+### Review output style (`.claude/output-styles/review.md`)
+One review format for every project and reviewer: a verdict (`ready` / `ready after fixes` / `needs rework`), then **Critical**, **Should fix** and **Nit** findings, each with `path:line` and a concrete fix, then **Checked** and **Not verified**. All the reviewer agents (`code-reviewer`, `security-reviewer`, `architecture-guard`, `a11y-reviewer`, `migration-reviewer`, `perf-reviewer`, `odata-expert`) report in it, so `/pr-description` and people read the same shape everywhere. To review in the main session, run `/output-style review` (or set `"outputStyle": "review"` in `settings.local.json`).
+
+### Status line (`.claude/scripts/statusline.mjs`)
+```
+Opus · client · feat/client-orders · react-ts+express · 3 edited · template a1b2c3d
+```
+| Part | Meaning |
+|------|---------|
+| `Opus` | the current model |
+| `client` | the package the branch is about, from its name (`<type>/<package>-<desc>`) |
+| `feat/client-orders` | the branch |
+| `react-ts+express` | client flavor + backend, cached at session start (an external/SAP backend adds nothing) |
+| `3 edited` | files Claude changed that the Stop check hasn't cleared yet |
+| `template a1b2c3d` | the exported template version (`template (source)` in this repo) |
+
+`settings.json` is protected from Claude, so a person adds the wiring once (team-wide), or each developer adds it to `settings.local.json`:
+```json
+"statusLine": { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/scripts/statusline.mjs" }
+```
+
 ### Rules (`.claude/rules/`)
 `code-style.md`, `react.md`, `backend.md`, `db.md`, `csharp.md`, `testing.md`. They hold the detailed conventions. Claude loads them when it works on matching files, and `prompt-context` injects their key points early.
 
@@ -106,6 +127,7 @@ Every hook also logs its blocks, asks and advice (plus any run slower than `CLAU
 |--------|---------|
 | `check.mjs` | One command for typecheck/lint/test in any package. It resolves npm/pnpm, script names and the dotnet CLI. |
 | `lib-info.mjs` | `list`, `show`, `api`, `usage`, `changes`, `sync-agents` for installed (in-house) libraries. |
+| `statusline.mjs` | The status line (see above). Reads Claude Code's status JSON on stdin, never fails. |
 | `audit-report.mjs` | Summary of the local logs: blocks/asks/advice per hook with top reasons, Stop blocks, hook latency, edits per package. `--days N`, `--json`. |
 | `export-template.mjs` | Export or update the template into a project (template repo only). |
 
@@ -277,10 +299,11 @@ This repo contains `.claude/template-source.md`. While that marker exists, `.cla
 .claude/
 ├── hooks/        # one .mjs per hook + __tests__/ (node:test, fixtures/*.json, fixtures/projects/<stack> for the smoke test)
 ├── lib/          # shared code: detect, hook-io + hook-log, edits ledger, imports, libs, db-target, read-guard, secrets, scoped checks, snapshot
-├── scripts/      # check, lib-info, audit-report, export-template
+├── scripts/      # check, lib-info, audit-report, statusline, export-template
 ├── rules/        # detailed conventions per area
 ├── skills/       # SKILL.md + templates
 ├── agents/       # reviewer/expert subagents
+├── output-styles/ # review.md: the shared review format
 └── settings.json # permissions + hook wiring
 ```
 

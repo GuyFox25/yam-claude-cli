@@ -34,12 +34,9 @@ First identify the variant, and apply only the rules that fit it:
 - For contract parity, start from the changed utils schemas (or all of them when asked), then trace their usages with `Grep` into db and server.
 
 ## Output
-```
-## Violations
-- path:line: rule #N: <what>. Move to / fix: <where it belongs>
-## Contract mismatches
-- utils <schema>.<field> vs db <fn> (path:line): <difference>
-## OK
-- <rules checked with no findings>
-```
+Report in the shared review format: read `.claude/output-styles/review.md` and follow it exactly.
+- Boundary violations are **Critical**: `path:line: rule #N: <what>. Fix: move to <where it belongs>`.
+- Contract mismatches are **Should fix**: `utils <schema>.<field> vs db <fn> (path:line): <difference>. Fix: ...`.
+- The rules checked with no findings go under **Checked**.
+
 Be precise and cite file:line. Don't speculate beyond what the code shows.

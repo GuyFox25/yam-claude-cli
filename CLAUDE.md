@@ -129,6 +129,7 @@ Requirements: Claude Code 2.1.47 or newer, Node 18+, and on Windows Git for Wind
 
 - Skills: `/new-endpoint`, `/new-component`, `/odata-call`, `/db-migration`, `/sql-for-pgadmin`, `/write-tests`, `/refactor-safe`, `/upgrade-lib`, `/explain-error`, `/commit`, `/review-guide`, `/pr-description`, `/release-notes`, `/fix-ci`, `/onboard`, `/lib-doc`
 - Agents: `code-reviewer`, `architecture-guard`, `test-runner`, `security-reviewer`, `db-expert`, `migration-reviewer`, `odata-expert`, `a11y-reviewer`, `perf-reviewer`, `library-expert`, plus the generated `lib-*` agents
+- Reviews (agents, or the main session with `/output-style review`) use one format: `.claude/output-styles/review.md`.
 - Before you say you're done, run `check.mjs typecheck --changed`, then `lint --changed`, then `test --changed`.
 
 ## Project-specific

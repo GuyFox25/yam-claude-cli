@@ -22,6 +22,7 @@ Last updated: 2026-10-10 (medium-term batch)
 | Template versioning | ⏳ Next | |
 | Stack-specific scaffolding gaps (OData, Prisma, Mongoose, .NET) | 📋 Planned | |
 | Medium-term skills, agents, hooks, audit report, smoke test | ✅ Done | see Done |
+| CLI UI: status line + review output style | ✅ Done | `settings.json` wiring by hand |
 | Measuring with real data (audit-report after the pilot) | ⏳ Next | |
 
 ---
@@ -72,6 +73,10 @@ The foundation: one config for every stack, detected at runtime instead of assum
 - **`audit-report.mjs`:** blocks/asks/advice per hook with normalized reasons, Stop blocks per check, hook latency, edits per package, failed tool calls; `--days`, `--json`.
 - **Smoke test:** six fixture projects (`.claude/hooks/__tests__/fixtures/projects/`) exported into temp repos; asserts the `Stack:` line, `check.mjs --changed` and the `.claude/` protection. They live under `.claude/` so the template's own detection never sees them.
 - New checks went into the already-registered hooks because `settings.json` is protected; no hook wiring changed.
+
+### CLI UI: status line and review output style
+- **Status line** (`scripts/statusline.mjs`): model · package · branch · stack · edited files · template version. The stack is cached by session-context so the line stays fast. Wiring goes in `settings.json` by hand (protected).
+- **Review output style** (`output-styles/review.md`): one verdict + Critical / Should fix / Nit format; all seven reviewer agents use it, and `/output-style review` brings it to the main session.
 
 ### Docs
 - [README.md](README.md) and this roadmap.
@@ -155,8 +160,6 @@ The previous batch is done (see **Done → Medium-term batch**). Promote items f
 Open ideas, not commitments.
 
 - **Plugin packaging:** ship the template as a Claude Code plugin from a local/internal marketplace instead of copying files. Updates become a version bump. Check the minimum Claude Code version against 2.1.47 first.
-- **Shared status line:** `client · feat/client-orders · react-ts · 3 edited · template v1.4`.
-- **Output style for reviews:** a consistent review format across all projects.
 - **Leaner root CLAUDE.md:** it's about 13 KB and loaded every session. Move details into rules that load on demand and keep the root as a map.
 - **lib-doc in library CI:** fail a library release if `claude-lib.md` is older than the API changes (compare exported symbols).
 - **Org-level dashboard:** aggregate anonymized audit stats from all projects to see which rules matter.

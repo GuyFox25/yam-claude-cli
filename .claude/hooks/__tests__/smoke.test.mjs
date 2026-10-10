@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixture, runHook, makeRepo, cleanup, HOOKS_DIR } from './helpers.mjs';
 
@@ -15,6 +15,16 @@ const { startup } = fixture('session-context.json');
 
 const git = (cwd, args) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd, encoding: 'utf8' });
 const node = (cwd, script, args) => spawnSync(process.execPath, [join(SCRIPTS, script), ...args], { cwd, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: cwd, CLAUDE_HOOK_LOG: 'off' } });
+
+// The stack part of the status line for each fixture.
+const STATUS_STACK = {
+  'sap-client': 'react-ts',
+  'legacy-jsx': 'react-js',
+  dotnet: 'react-ts+dotnet',
+  'express-drizzle': 'express',
+  'nest-prisma': 'nestjs',
+  mongo: 'express',
+};
 
 // The Stack: fields each fixture must produce (substrings of the line).
 const EXPECTED = {
@@ -47,6 +57,11 @@ for (const [name, fields] of Object.entries(EXPECTED)) {
       const stack = session.stdout.split('\n').find((l) => l.startsWith('Stack:')) ?? '';
       for (const field of fields) assert.ok(stack.includes(field), `expected "${field}" in: ${stack}`);
       assert.match(session.stdout, /Branch: chore\/claude-code-setup/);
+
+      // The status line reads the stack session-context just cached, and the exported template version.
+      const line = spawnSync(process.execPath, [join(SCRIPTS, 'statusline.mjs')], { input: '{"model":{"display_name":"Opus"}}', encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: root } });
+      const version = JSON.parse(readFileSync(join(root, '.claude/template-manifest.json'), 'utf8')).template;
+      assert.equal(line.stdout.trim(), `Opus · chore/claude-code-setup · ${STATUS_STACK[name]} · template ${version}`);
 
       // Nothing uncommitted after the setup commit, so --changed has nothing to do and must say so cleanly.
       const check = node(root, 'check.mjs', ['typecheck', '--changed']);

@@ -24,6 +24,8 @@ test('exports .claude/ without the marker, tests or local files, and merges CLAU
   assert.equal(res.status, 0, res.stderr);
   assert.ok(existsSync(join(dest, '.claude/settings.json')));
   assert.ok(existsSync(join(dest, '.claude/hooks/guard-bash.mjs')));
+  assert.ok(existsSync(join(dest, '.claude/output-styles/review.md')), 'the shared review format ships with the template');
+  assert.ok(existsSync(join(dest, '.claude/scripts/statusline.mjs')));
   assert.ok(!existsSync(join(dest, '.claude/template-source.md')), 'marker must not be exported');
   assert.ok(!existsSync(join(dest, '.claude/hooks/__tests__')), 'hook tests stay in the template');
   assert.ok(!existsSync(join(dest, '.claude/scripts/export-template.mjs')));
