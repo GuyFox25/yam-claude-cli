@@ -48,18 +48,20 @@ Packages that don't exist in a project (for example `server/` and `db/` in an SA
 ### Hooks (`.claude/hooks/`, wired in [`.claude/settings.json`](.claude/settings.json))
 | Hook | Event | What it does | Effect |
 |------|-------|--------------|--------|
-| `session-context` | SessionStart | Prints branch, uncommitted files, likely package, the `Stack:` line, client form/data libraries, ESLint configs and in-house libraries. Regenerates `lib-*` agents and restores the compaction snapshot. | context |
+| `session-context` | SessionStart | Prints branch, uncommitted files, likely package, the `Stack:` line, client form/data libraries, ESLint configs and in-house libraries. Regenerates `lib-*` agents and restores the compaction snapshot. Warns about slow hooks (p95 over `CLAUDE_HOOK_SLOW_MS`). | context |
 | `prompt-context` | UserPromptSubmit | When a prompt is about migrations, endpoints, tests or components, adds the key points of the matching rule file (once per session). | context |
 | `guard-bash` | PreToolUse (Bash/PowerShell) | Blocks destructive commands (`rm -rf`, `git push`, `reset --hard`, `--force`, `DROP`/`TRUNCATE`...), network commands (`curl`, `wget`), and migrate/seed commands aimed at a non-local DB. | **blocks** / asks |
-| `guard-boundaries` | PreToolUse (Read/Edit/Write) | Protects `.env*`, lockfiles, applied migrations, `node_modules`, settings and the template's `.claude/`. Enforces package import boundaries. Blocks whole-file reads of lockfiles, build output and huge files. Asks before adding a dependency or converting a class component. | **blocks** / asks |
+| `guard-boundaries` | PreToolUse (Read/Edit/Write) | Protects `.env*`, lockfiles, applied migrations, `node_modules`, settings and the template's `.claude/`. Enforces package import boundaries. Blocks secrets in written text (private keys, tokens, connection strings with a password, hard-coded credentials; placeholders and localhost defaults are fine). Blocks whole-file reads of lockfiles, build output and huge files. Asks before adding a dependency or converting a class component. | **blocks** / asks |
 | `track-edits` | PostToolUse | Records which files Claude edited this session. | internal |
 | `format-on-write` | PostToolUse | `prettier` + `eslint --fix` on the edited file (`dotnet format whitespace` for C#). | auto-fix |
-| `style-advice` | PostToolUse | Notes on the lines just added: `function` declarations, `any`, >3 params, commented-out code, raw `req.body`, vague errors, `fetch` in components... | advisory |
+| `style-advice` | PostToolUse | Notes on the lines just added: `function` declarations, `any`, >3 params, commented-out code, raw `req.body`, vague errors, `fetch` in components, `console.log`/`debugger`/`.only(`, a new source file without a test, hard-coded UI text (clients with i18n), physical CSS directions (`CLAUDE_HOOK_RTL=on`), and C# `async void` / missing `Async` suffix / SQL built from strings. | advisory |
 | `ripple-advice` | PostToolUse | After a `utils` edit, lists the db/server/client files that import it. | advisory |
 | `audit-log` | PostToolUse (async) | Appends tool + file/command + time to `.claude/logs/audit.jsonl`. Never logs contents; secrets are redacted. | log |
 | `precompact-snapshot` | PreCompact | Saves prompts, decisions, the last plan, todos and edited files to `.claude/scratch/`. | context |
 | `stop-check` | Stop | Lints and typechecks only the files Claude edited and runs the test suites of their packages. Only failures in those files or their related tests block. | **blocks** on own failures |
 | `notify-bell` | Notification | Terminal bell + desktop notification when Claude is waiting for you. | notify |
+
+Every hook also logs its blocks, asks and advice (plus any run slower than `CLAUDE_HOOK_SLOW_MS`) with its duration to `.claude/logs/hooks.jsonl` (local, gitignored). `audit-report.mjs` summarizes it.
 
 ### Skills (slash commands, `.claude/skills/`)
 | Skill | Use it to... | Example prompt |
@@ -67,10 +69,17 @@ Packages that don't exist in a project (for example `server/` and `db/` in an SA
 | `/new-endpoint` | Scaffold a feature end to end: utils → db → server → client (Node), controller/service/data → client (.NET), or client API + hook against an existing OData service (SAP). Tests included. | `/new-endpoint GET /orders/:id returning the order with its lines` |
 | `/db-migration` | Change the schema, generate a new migration, review the SQL, apply locally, update seeds. | `/db-migration add a nullable cancelled_at to orders` |
 | `/write-tests` | Write and run tests for a file with the detected runner. | `/write-tests client/src/components/OrderCard/OrderCard.tsx` |
+| `/new-component` | Component folder (component, index, styles, test, story if Storybook is installed) copying the nearest component's conventions. TSX or legacy JSX. | `/new-component OrderCard in features/orders` |
+| `/odata-call` | Typed API function + hook for an SAP entity set or function import, from the `$metadata` saved in the repo. CSRF for writes, `$filter` escaping, field mapping, tests. Never invents names. | `/odata-call ZORDERS_SRV OrderSet read+update` |
+| `/sql-for-pgadmin` | A query for you to run in pgAdmin, with the real table and column names. Read-only by default; writes come wrapped in `BEGIN … ROLLBACK`. | `/sql-for-pgadmin orders without lines in the last 30 days` |
+| `/refactor-safe` | Pin current behavior with characterization tests, then refactor in small steps with the tests run after each. | `/refactor-safe client/src/features/orders/OrdersTable.tsx split it up` |
+| `/upgrade-lib` | Upgrade a library: its breaking changes, every usage in the repo, the bump (you approve), the code changes and the checks. | `/upgrade-lib @acme/ui 3.0.0` |
+| `/explain-error` | Trace a pasted stack trace, HTTP error or SAP Gateway error to the code and rank the likely causes. Edits only after you agree. | `/explain-error` + paste the error |
 | `/commit` | Write a Conventional Commit message; commits only after you confirm. | `/commit` |
 | `/review-guide` | Write `review/<branch>.md` for the reviewer: manual QA test cases (P1–P3) and ranked review pointers with `file:line`, from the branch diff. | `/review-guide` |
 | `/pr-description` | Run code-reviewer + test-runner, then fill the PR template from `git diff main...HEAD`. | `/pr-description` |
 | `/fix-ci` | Diagnose a pasted CI log and reproduce the failure locally. | `/fix-ci` + paste the log |
+| `/release-notes` | Notes for users (not developers) from the Conventional Commits between two refs. | `/release-notes v1.3.0..HEAD` |
 | `/onboard` | Explain the repo, stack, boundaries and how to run everything. | `/onboard` |
 | `/lib-doc` | Create or refresh `claude-lib.md` inside an in-house library's repo. | `/lib-doc` (run in the library repo) |
 
@@ -81,6 +90,10 @@ Packages that don't exist in a project (for example `server/` and `db/` in an SA
 | `security-reviewer` | opus | Changes to auth, endpoints, queries, file handling, config. |
 | `architecture-guard` | sonnet | Changes spanning packages, or "where does this belong?" |
 | `db-expert` | sonnet | Schema design, indexes, query performance, risky migration plans. Read-only. |
+| `migration-reviewer` | sonnet | New migrations before they're applied or merged: locks, NOT NULL without default, index builds, backfills, destructive steps, reversibility. |
+| `odata-expert` | sonnet | "Which entity set has X" from the saved `$metadata`, and checks OData calls against it. |
+| `a11y-reviewer` | sonnet | UI changes: labels, roles, keyboard and focus, contrast risks, RTL layout. |
+| `perf-reviewer` | sonnet | Slow screens or queries: re-renders, list keys, query keys, N+1, missing indexes, unbounded queries. |
 | `library-expert` | sonnet | Any installed library: API, how this repo uses it, what changed between versions. |
 | `lib-<name>` | — | Generated per in-house library from its `claude-lib.md`. Preferred over `library-expert`. |
 | `test-runner` | haiku | Runs typecheck/lint/tests and returns only failures with likely causes. |
@@ -93,6 +106,7 @@ Packages that don't exist in a project (for example `server/` and `db/` in an SA
 |--------|---------|
 | `check.mjs` | One command for typecheck/lint/test in any package. It resolves npm/pnpm, script names and the dotnet CLI. |
 | `lib-info.mjs` | `list`, `show`, `api`, `usage`, `changes`, `sync-agents` for installed (in-house) libraries. |
+| `audit-report.mjs` | Summary of the local logs: blocks/asks/advice per hook with top reasons, Stop blocks, hook latency, edits per package. `--days N`, `--json`. |
 | `export-template.mjs` | Export or update the template into a project (template repo only). |
 
 ### Permissions ([`.claude/settings.json`](.claude/settings.json))
@@ -175,11 +189,12 @@ node .claude/scripts/check.mjs lint --files client/src/api/orders.ts
 ```
 
 - **Starting a feature:** branch as `<type>/<package>-<short-desc>` (e.g. `feat/client-order-search`). The session hook uses the package in the name.
-- **Adding data flow:** `/new-endpoint`. **Schema change:** `/db-migration`. **Tests:** `/write-tests`.
-- **Before a PR:** ask for the `code-reviewer` (and `security-reviewer` when relevant), then run `/review-guide` and `/pr-description` (it links the guide).
+- **Adding data flow:** `/new-endpoint` (or `/odata-call` against SAP). **UI:** `/new-component`. **Schema change:** `/db-migration`, then the `migration-reviewer` agent. **Tests:** `/write-tests`.
+- **Something broke:** `/explain-error` + paste it. **Cleaning up code:** `/refactor-safe`. **Data question:** `/sql-for-pgadmin`. **Library upgrade:** `/upgrade-lib`.
+- **Before a PR:** ask for the `code-reviewer` (plus `security-reviewer`, `a11y-reviewer` or `perf-reviewer` when relevant), then run `/review-guide` and `/pr-description` (it links the guide).
 - **Committing:** `/commit`. Claude asks before every commit and never pushes.
 - **When Claude stops:** the Stop hook checks only what Claude edited. If its own changes break lint, types or related tests, it keeps working. Failures that were already there are shown to you as a note.
-- **SAP projects:** Claude never invents OData services, entity sets or fields. Put saved `$metadata` or service constants in the repo, or tell it. If something needs an ABAP change, it describes the change for the SAP team.
+- **SAP projects:** Claude never invents OData services, entity sets or fields. Put saved `$metadata` or service constants in the repo, or tell it. The `odata-expert` agent answers "which entity set has X" from those files. If something needs an ABAP change, it describes the change for the SAP team.
 
 ---
 
@@ -220,6 +235,10 @@ Personal settings go in `.claude/settings.local.json` (gitignored) and `CLAUDE.l
 | `CLAUDE_LOCAL_DB_HOSTS` | — | Extra hostnames (comma-separated) the migration guard treats as local, e.g. docker service names. |
 | `CLAUDE_AUDIT_MAX_BYTES` | 5 MB | Size at which `.claude/logs/audit.jsonl` rotates. |
 | `CLAUDE_HOOK_STATE_DIR` | `<tmp>/claude-hooks` | Where the per-session edit ledger is kept. |
+| `CLAUDE_HOOK_RTL` | off | `on` flags physical CSS directions (`margin-left`, `text-align: right`...) for RTL (Hebrew) UIs. |
+| `CLAUDE_HOOK_I18N` | auto | Hard-coded UI text notes. Auto: on when the client depends on an i18n library (i18next, react-intl, lingui...). `on`/`off` force it. |
+| `CLAUDE_HOOK_SLOW_MS` | 2000 | A hook slower than this is logged and reported as slow at session start. |
+| `CLAUDE_HOOK_LOG` | on | `off` stops writing `.claude/logs/hooks.jsonl`. |
 
 ---
 
@@ -233,6 +252,7 @@ Personal settings go in `.claude/settings.local.json` (gitignored) and `CLAUDE.l
 | import the ORM in `server/`, `db/` in a controller, or `server`/`db` in `client` | package boundaries | Go through a service → db function, or through utils types + HTTP. |
 | run a migration against a non-local DB | protects shared databases | Run it yourself, or add the docker host to `CLAUDE_LOCAL_DB_HOSTS`. |
 | `git push`, `rm -rf`, `reset --hard`, `curl` | irreversible / network closed | Do it yourself if you really mean it. |
+| write a key, token or password into a file | secrets in git | Read it from env/config and document the name in `.env.example`. Use a placeholder (`<token>`) in docs and tests. |
 | edit `.claude/` in a project | shared template | Change it in this repo and re-export. |
 | read a whole lockfile, `dist/`, or a >256 KB file | context waste | Claude uses Grep or a partial Read instead. |
 
@@ -242,8 +262,9 @@ Personal settings go in `.claude/settings.local.json` (gitignored) and `CLAUDE.l
 
 - **Hooks don't run on Windows:** install Git for Windows and make sure `bash` and `node` are on `PATH`. Restart Claude Code.
 - **No `Stack:` line at start:** run `node .claude/hooks/session-context.mjs < /dev/null` to see errors.
+- **A hook is slow** (the session start says `Slow hooks: ...`): `audit-report.mjs` shows p50/p95 per hook. Report it with the numbers.
 - **Stop hook is slow:** it runs the full test suites of the touched packages (600s timeout). Make sure the package `test` script runs once (not watch mode).
-- **A block looks wrong:** check `.claude/logs/audit.jsonl` for the exact command or path. Report it here with an example so a test fixture can be added.
+- **A block looks wrong:** run `node .claude/scripts/audit-report.mjs` to see which hook blocks and why, and check `.claude/logs/audit.jsonl` for the exact command or path. Report it here with an example so a test fixture can be added.
 - **Context lost after compaction:** the snapshot is in `.claude/scratch/compact-<session>.md` and is printed again automatically.
 
 ---
@@ -254,9 +275,9 @@ This repo contains `.claude/template-source.md`. While that marker exists, `.cla
 
 ```
 .claude/
-├── hooks/        # one .mjs per hook + __tests__/ (node:test, fixtures/*.json)
-├── lib/          # shared code: detect, hook-io, edits ledger, imports, libs, db-target, read-guard, scoped checks, snapshot
-├── scripts/      # check, lib-info, export-template
+├── hooks/        # one .mjs per hook + __tests__/ (node:test, fixtures/*.json, fixtures/projects/<stack> for the smoke test)
+├── lib/          # shared code: detect, hook-io + hook-log, edits ledger, imports, libs, db-target, read-guard, secrets, scoped checks, snapshot
+├── scripts/      # check, lib-info, audit-report, export-template
 ├── rules/        # detailed conventions per area
 ├── skills/       # SKILL.md + templates
 ├── agents/       # reviewer/expert subagents
@@ -268,10 +289,12 @@ This repo contains `.claude/template-source.md`. While that marker exists, `.cla
 node --test .claude/hooks/__tests__/*.test.mjs
 ```
 
+`smoke.test.mjs` exports the template into a copy of each fixture project in `__tests__/fixtures/projects/` (sap-client, legacy-jsx, dotnet, express-drizzle, nest-prisma, mongo) and checks the detected `Stack:` line, `check.mjs --changed` and the `.claude/` protection. To cover a new stack variant, add a minimal fixture project and its expected fields there. The fixtures sit under `.claude/` because stack detection skips hidden folders, so they never change how this repo detects itself.
+
 Guidelines:
 - **Stay generic.** Never hard-code a package manager, framework, ORM or script name. Detect it (`lib/detect.mjs`) and handle every stack variant: TSX and legacy JSX, SAP/.NET/Node, npm/pnpm.
 - **Node built-ins only** in hooks and scripts. Projects have a closed network.
 - **Claude Code 2.1.47 compatibility:** use the shell-form hook command `node "$CLAUDE_PROJECT_DIR"/.claude/hooks/x.mjs`. Check newer features against the changelog before using them.
-- **New hook:** add `hooks/<name>.mjs` (header comment: event + behavior), wire it in `settings.json`, add `__tests__/<name>.test.mjs` with fixtures, and document it in `CLAUDE.md` and this README.
+- **New hook:** prefer adding a check to an existing hook (`guard-boundaries` for blocks before a write, `style-advice` for advice after it), since `settings.json` is protected. A really new hook: add `hooks/<name>.mjs` (header comment: event + behavior), import `lib/hook-io.mjs` so it's logged, propose the `settings.json` wiring, add `__tests__/<name>.test.mjs` with fixtures, and document it in `CLAUDE.md` and this README.
 - **Commits:** Conventional Commits, scoped e.g. `feat(hooks): ...`, `docs(rules): ...`. Branch from `main`, open a PR.
 - **Release:** merge, then re-export into each project.

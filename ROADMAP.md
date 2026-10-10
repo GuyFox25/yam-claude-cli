@@ -2,7 +2,7 @@
 
 What's been built so far, what's next, and a pool of ideas. Usage docs are in [README.md](README.md).
 
-Last updated: 2026-10-10 (after PR #3)
+Last updated: 2026-10-10 (medium-term batch)
 
 ## Status at a glance
 
@@ -14,14 +14,15 @@ Last updated: 2026-10-10 (after PR #3)
 | Format, style advice, ripple, Stop checks | ✅ Done | Stop blocks only on Claude's own failures |
 | Context helpers (rule injection, compaction snapshot) | ✅ Done | |
 | In-house library experts | ✅ Done | `claude-lib.md` → `lib-*` agents |
-| Rules, skills, agents | ✅ Done (v1) | 6 rules, 9 skills, 6 agents |
+| Rules, skills, agents | ✅ Done (v2) | 6 rules, 16 skills, 10 agents |
 | Export / update into projects | ✅ Done | manifest-based |
 | Docs (README, ROADMAP) | ✅ Done | this file |
 | Pilot in real projects | ⏳ Next | one project per stack |
 | CI for the template itself | ⏳ Next | |
 | Template versioning | ⏳ Next | |
 | Stack-specific scaffolding gaps (OData, Prisma, Mongoose, .NET) | 📋 Planned | |
-| New skills/agents/hooks | 💡 Ideas | see below |
+| Medium-term skills, agents, hooks, audit report, smoke test | ✅ Done | see Done |
+| Measuring with real data (audit-report after the pilot) | ⏳ Next | |
 
 ---
 
@@ -59,6 +60,19 @@ The foundation: one config for every stack, detected at runtime instead of assum
 ### PR #3: Repo-first lookup
 - Claude searches the repo (utils, `global/`, `shared/`, `common/`) **before** asking a `lib-*` agent, and this is stated everywhere libraries are mentioned.
 
+### PR #5: `/review-guide`
+- Writes `review/<branch>.md` for the reviewer: manual QA test cases (P1–P3) and ranked review pointers with `file:line`. `/pr-description` links it.
+
+### Medium-term batch
+- **Skills:** `/new-component`, `/odata-call`, `/sql-for-pgadmin`, `/upgrade-lib`, `/explain-error`, `/release-notes`, `/refactor-safe`.
+- **Agents:** `odata-expert`, `a11y-reviewer`, `migration-reviewer`, `perf-reviewer` (read-only, sonnet).
+- **Secret scanner** in `guard-boundaries`: private keys, provider tokens, connection strings with a password, hard-coded credentials. Names the kind and line, never the value. Placeholders and localhost defaults pass.
+- **`style-advice` additions:** debug leftovers (`console.log`, `debugger`, `.only(`), missing-test nudge for new source files, hard-coded UI text (auto when the client has an i18n library, `CLAUDE_HOOK_I18N`), RTL physical directions (`CLAUDE_HOOK_RTL=on`), C# heuristics (`async void`, `Async` suffix, SQL built from strings).
+- **Hook log + timing budget:** `hook-io` logs blocks, asks, advice and slow runs with their duration to `.claude/logs/hooks.jsonl`; session start warns about hooks over `CLAUDE_HOOK_SLOW_MS`.
+- **`audit-report.mjs`:** blocks/asks/advice per hook with normalized reasons, Stop blocks per check, hook latency, edits per package, failed tool calls; `--days`, `--json`.
+- **Smoke test:** six fixture projects (`.claude/hooks/__tests__/fixtures/projects/`) exported into temp repos; asserts the `Stack:` line, `check.mjs --changed` and the `.claude/` protection. They live under `.claude/` so the template's own detection never sees them.
+- New checks went into the already-registered hooks because `settings.json` is protected; no hook wiring changed.
+
 ### Docs
 - [README.md](README.md) and this roadmap.
 
@@ -83,7 +97,7 @@ Small, concrete items, roughly in priority order.
 - Use `.claude/logs/audit.jsonl` from each pilot to see what Claude actually does.
 
 ### 2. CI for the template
-**Why:** 248 tests protect the hooks, but nothing runs them automatically.
+**Why:** 298 tests (including the export smoke test) protect the hooks, but nothing runs them automatically.
 ```yaml
 # .github/workflows/template-tests.yml
 on: [pull_request]
@@ -132,43 +146,7 @@ export const fetchOrders = (customer: string) =>
 
 ## 📋 Medium term
 
-### New skills
-| Skill | Idea | Example |
-|-------|------|---------|
-| `/new-component` | Component folder + styles + test (+ story if Storybook is detected), following `react.md` | `/new-component OrderCard in features/orders` |
-| `/odata-call` | Generate typed API function + hook from a saved `$metadata` file, never inventing fields | `/odata-call ZORDERS_SRV OrderSet read+update` |
-| `/sql-for-pgadmin` | Write a query for the user to run in pgAdmin (read-only by default, wrapped in `BEGIN … ROLLBACK` for writes) | `/sql-for-pgadmin orders without lines last 30 days` |
-| `/upgrade-lib` | Bump an in-house lib: `lib-info changes`, find usages, apply breaking changes, run checks | `/upgrade-lib @acme/ui 3.0.0` |
-| `/explain-error` | Paste a stack trace or SAP error message, find the cause in the repo | |
-| `/release-notes` | Notes for users (not devs) from commits between two tags | `/release-notes v1.3.0..HEAD` |
-| `/refactor-safe` | Refactor with a test-first safety net: write characterization tests, then refactor | |
-
-### New agents
-| Agent | Purpose |
-|-------|---------|
-| `odata-expert` | Reads saved `$metadata`, answers "which entity set has X", checks API calls against it |
-| `a11y-reviewer` | Labels, roles, keyboard focus, contrast hints, RTL issues |
-| `migration-reviewer` | Reviews generated SQL: locks, backfills, destructive steps, expand/contract |
-| `perf-reviewer` | React re-renders, missing memo/keys, N+1 queries, missing indexes |
-
-### New hooks / hook improvements
-- **Secret scanner** (PreToolUse Edit/Write): block tokens, private keys and connection strings with passwords in written content.
-- **Debug leftovers** (advisory): `console.log`, `debugger`, `.only(` in tests.
-- **Missing test nudge** (advisory): a new source file with no matching test file.
-- **Hard-coded UI strings** (advisory, opt-in): for projects with i18n, and RTL checks for Hebrew UIs (`margin-left` → `margin-inline-start`).
-- **Hook timing budget:** record each hook's duration in the audit log and warn when one is slow.
-- **`style-advice` on .NET:** a few C# heuristics (`async void`, missing `Async` suffix, string-concatenated SQL).
-
-### Measuring and tuning
-- `audit-report.mjs`: summarize `audit.jsonl` (most-blocked commands, most-edited packages, how often Stop blocked, hook latency). Use it to tune rules after the pilot.
-  ```
-  Blocks (last 7 days): guard-boundaries 14 (env read 6, barrel import 5, lockfile 3), guard-bash 4
-  Stop blocked: 9 sessions (lint 5, types 3, tests 1)
-  ```
-
-### Testing the template end to end
-- Fixture projects under `test-fixtures/` (sap-client, legacy-jsx, dotnet, express-drizzle, nest-prisma, mongo).
-- Smoke test: export into a temp copy of each fixture, run `session-context` and assert on the `Stack:` line, then run `check.mjs --changed`.
+The previous batch is done (see **Done → Medium-term batch**). Promote items from Brainstorming here once there's a concrete why and an example.
 
 ---
 
@@ -196,7 +174,7 @@ Open ideas, not commitments.
 - Should projects pin a template version, or always take latest?
 - When does the npm → pnpm move happen, and in which projects first?
 - Is NestJS + Prisma confirmed for an upcoming project? That sets the priority of the Prisma templates.
-- Which projects use i18n/RTL? That decides whether the UI-strings hook is worth it.
+- Which projects are RTL (turn on `CLAUDE_HOOK_RTL`) and which use i18n (the UI-text notes turn on by themselves)?
 
 ---
 
