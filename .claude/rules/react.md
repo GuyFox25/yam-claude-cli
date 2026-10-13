@@ -26,8 +26,24 @@ The client is always React. Two styles exist across projects; the session `Stack
 - Import it through the folder (`import { Button } from './Button';`), never `./Button/Button`.
 - Don't restructure existing flat components unless asked.
 
+## Inside a component file
+- **Body order:** context/router hooks → state → custom and data hooks → derived values → handlers → effects → early returns → JSX, with one blank line between the groups:
+  1. props, context and router hooks (`useContext`, `useNavigate`, `useTranslation`)
+  2. state: `useState`, `useReducer`, `useRef`
+  3. custom and data hooks (`useOrders`, `useForm`)
+  4. derived values (plain consts or `useMemo`)
+  5. handlers and other functions (`handleSubmit`, `useCallback`)
+  6. effects (`useEffect`)
+  7. early returns for loading, error and empty states
+  8. the returned JSX
+- **Mostly markup.** When the logic above `return` (state, hooks, handlers, effects, derived values) is longer than the JSX, or grows past ~40 lines, move it into a `use<Name>` hook in the component folder (`use<Name>.ts`) that returns what the JSX needs. When the JSX grows past ~80 lines, split it into subcomponents.
+- Every hook comes before the first early return (rules of hooks).
+- File order: imports → types (`type XProps`) → module constants and helpers that don't need props or state → the component.
+- Existing class components: `state` and static fields → lifecycle methods → handlers → render helpers → `render()`.
+- A component file stays under ~150 lines; any other source file under ~250 (`code-style.md`).
+
 ## SOLID for components
-- **Single responsibility:** data, state and logic live in custom hooks (`useOrders`); components render. Split any component over ~150 lines.
+- **Single responsibility:** data, state and logic live in custom hooks (`useOrders`); components render. Split any component over ~150 lines (see "Inside a component file").
 - **Open/closed:** extend through props, `children` and composition. Don't add type flags and `if` branches to shared components.
 - **Liskov:** a wrapper component forwards the base component's props (`...rest`) and never changes what they mean.
 - **Interface segregation:** minimal, specific props. Pass the fields a component uses, not whole entities. No prop drilling 3+ levels; use context or composition.

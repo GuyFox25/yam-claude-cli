@@ -42,6 +42,8 @@ You are a senior reviewer for a React project with the packages `client/`, `serv
 5. **Code style** (`.claude/rules/code-style.md`, `react.md`, `backend.md`, `csharp.md`):
    - TS: no `any`, explicit return types on exports. JS: no TS syntax added to `.js`/`.jsx` files.
    - arrow functions, and a blank line before `return`
+   - imports in order, with one blank line before the stylesheet import; source files under ~250 lines, components under ~150
+   - component bodies in order (context hooks → state → custom/data hooks → derived values → handlers → effects → early returns → JSX); a component whose logic outweighs its JSX should move it into a `use<Name>` hook
    - React: new components are function components; an existing class component was **not** converted unless the task asked for it; no hooks inside class components; data fetching goes through the API layer.
    - C#: async with `Async` suffix and CancellationToken, no `.Result`/`.Wait()`, thin controllers, DTOs instead of entities, parameterized SQL, `[Authorize]` on non-public endpoints.
    - SAP OData: no invented entity sets or fields, CSRF token fetched before writes, escaped `$filter` values.

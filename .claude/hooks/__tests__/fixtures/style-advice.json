@@ -14,7 +14,9 @@
     { "rule": "stack trace", "file_path": "server/src/middleware/errors.ts", "content": "res.status(500).json({ error: err.stack });\n" },
     { "rule": "`new` on a service", "file_path": "server/src/orders/orders.controller.ts", "content": "private readonly service = new OrdersService();\n" },
     { "rule": "calls the HTTP client directly", "file_path": "client/src/components/Orders.tsx", "content": "useEffect(() => { fetch('/api/orders').then(setOrders); }, []);\n" },
-    { "rule": "calls the HTTP client directly", "file_path": "client/src/pages/Orders.jsx", "content": "const load = () => axios.get('/api/orders');\n" }
+    { "rule": "calls the HTTP client directly", "file_path": "client/src/pages/Orders.jsx", "content": "const load = () => axios.get('/api/orders');\n" },
+    { "rule": "no blank line before the stylesheet import", "file_path": "client/src/Card/Card.tsx", "content": "import { useState } from 'react';\nimport styles from './Card.module.scss';\n" },
+    { "rule": "no blank line before the stylesheet import", "file_path": "client/src/App.jsx", "content": "import { App } from './App';\nimport './index.css';\n" }
   ],
   "clean": [
     { "file_path": "server/src/users.service.ts", "content": "export const getUser = async (id: string): Promise<User> => {\n  const user = await findUser(id);\n\n  return user;\n};\n" },
@@ -26,6 +28,8 @@
     { "file_path": "client/src/legacy/Old.jsx", "content": "const value: any = 1;\n" },
     { "file_path": "server/src/users.test.ts", "content": "it('rejects', () => request(app).post('/users').send(req.body));\n" },
     { "file_path": "server/README.md", "content": "function x() {}\n" },
-    { "file_path": "client/src/types.d.ts", "content": "declare function legacy(a: any): void;\n" }
+    { "file_path": "client/src/types.d.ts", "content": "declare function legacy(a: any): void;\n" },
+    { "file_path": "client/src/Card/Card.tsx", "content": "import { useState } from 'react';\n\nimport styles from './Card.module.scss';\nimport './theme.css';\n" },
+    { "file_path": "client/src/main.tsx", "content": "import './index.css';\n" }
   ]
 }

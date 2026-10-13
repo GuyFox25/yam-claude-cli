@@ -15,7 +15,8 @@ Follow `.claude/rules/react.md` and `.claude/rules/code-style.md`.
    - **Repo first:** search the utils package, `global/`, `shared/` and `common/` folders and the existing components for something that already does this (or most of it). Extend or compose it instead of duplicating. Only then check the in-house UI libraries (`lib-info.mjs list`) and ask their `lib-*` agent for the right building blocks.
    - If the name, location, props or behavior are unclear, ask before writing.
 2. **Create the folder** `<folder>/<Name>/`:
-   - `<Name>.tsx` (or `.jsx`): an arrow function component, with an explicit `type <Name>Props` in TS (no `any`, no `React.FC`). In JS, add `propTypes` only if the project already uses `prop-types`.
+   - `<Name>.tsx` (or `.jsx`): an arrow function component, with an explicit `type <Name>Props` in TS (no `any`, no `React.FC`). In JS, add `propTypes` only if the project already uses `prop-types`. Order the body as react.md "Inside a component file" says (context hooks → state → custom/data hooks → derived values → handlers → effects → early returns → JSX), and put one blank line before the stylesheet import.
+   - `use<Name>.ts` (or `.js`), only when the logic would be longer than the JSX: move the state, effects and handlers there, and keep the component file mostly markup and under ~150 lines.
    - `index.ts` (or `index.js`): `export { <Name> } from './<Name>';`
    - the stylesheet in the kind the neighbors use. Use logical CSS properties (`margin-inline-start`) if the UI is RTL.
    - `<Name>.test.tsx` (or `.test.jsx`): render, the main interaction, and the loading, empty and error states if it shows data. Use Testing Library and assert on what the user sees.
