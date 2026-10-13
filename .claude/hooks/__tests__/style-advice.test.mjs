@@ -119,3 +119,67 @@ test('C#: async void, missing Async suffix and SQL built from strings', () => {
   assert.match(cs('Api/Services/OrderService.cs', 'public async void Save() { }\n'), /analyzers and \.editorconfig win/);
   assert.equal(cs('Api/Migrations/20240101_Init.cs', 'public async void Up() { }\n'), '');
 });
+
+// N numbered code lines, so a file of an exact length is easy to build.
+const codeLines = (n, prefix = 'const v') => Array.from({ length: n }, (_, i) => `${prefix}${i} = ${i};`).join('\n');
+const edit = (repo, file_path, old_string, new_string) => ({ tool_name: 'Edit', tool_input: { file_path: join(repo, file_path), old_string, new_string } });
+
+test('file size: flagged only on the write or edit that crosses ~150 (components) / ~250 lines', () => {
+  const big = `${codeLines(300)}\n`;
+  const repo = makeRepo({
+    committed: {
+      'client/package.json': { name: 'client' },
+      'utils/package.json': { name: 'utils' },
+      // As left by an edit that replaced `const v0 = 0;` with 21 lines: 140 lines before, 160 now.
+      'client/src/Grow/Grow.tsx': `${codeLines(21, 'const w')}\n${codeLines(140).split('\n').slice(1).join('\n')}\n`,
+      'utils/src/legacy.ts': `${big}const extra = 1;\n`,
+    },
+  });
+  const created = (file, n) => notesFor(repo, file, `${codeLines(n)}\n`, { type: 'create' });
+
+  assert.match(created('client/src/Card/Card.tsx', 151), /file is 151 lines \(limit ~150 for a component\)/);
+  assert.equal(created('client/src/Card/Card.tsx', 140).includes('file is'), false);
+  assert.match(created('utils/src/format.ts', 251), /file is 251 lines \(limit ~250\)/);
+  assert.equal(created('utils/src/format.ts', 200).includes('file is'), false);
+  assert.equal(created('utils/src/format.test.ts', 400).includes('file is'), false);
+
+  // The Edit already happened: the file on disk is the result, and the hook undoes the edit to get the old length.
+  const grown = note(runHook('style-advice.mjs', edit(repo, 'client/src/Grow/Grow.tsx', 'const v0 = 0;', codeLines(21, 'const w')), repo));
+  assert.match(grown?.additionalContext ?? '', /file is 160 lines/);
+  const legacy = note(runHook('style-advice.mjs', edit(repo, 'utils/src/legacy.ts', 'const extra = 0;', 'const extra = 1;'), repo));
+  assert.equal(legacy?.additionalContext.includes('file is') ?? false, false);
+  cleanup(repo);
+});
+
+const component = (logic, jsx) =>
+  [
+    "import { useState } from 'react';",
+    '',
+    "import styles from './Panel.module.scss';",
+    '',
+    'export const Panel = (): JSX.Element => {',
+    codeLines(logic, '  const v'),
+    '',
+    '  return (',
+    `    <div className={styles.panel}>`,
+    Array.from({ length: jsx }, (_, i) => `      <span>{v${i % Math.max(logic, 1)}}</span>`).join('\n'),
+    '    </div>',
+    '  );',
+    '};',
+    '',
+  ].join('\n');
+
+test('logic vs JSX: flagged when a component has more than ~40 logic lines and more logic than markup', () => {
+  const repo = makeRepo({ committed: { 'client/package.json': { name: 'client' }, 'client/src/Big/Big.tsx': component(60, 5) } });
+  const created = (file, content) => notesFor(repo, file, content, { type: 'create' });
+
+  assert.match(created('client/src/Panel/Panel.tsx', component(50, 10)), /component logic \(\d+ lines\) outweighs its JSX \(\d+ lines\)/);
+  assert.equal(created('client/src/Panel/Panel.tsx', component(45, 60)).includes('outweighs'), false);
+  assert.equal(created('client/src/Panel/Panel.tsx', component(20, 5)).includes('outweighs'), false);
+  assert.equal(created('client/src/hooks/usePanel.tsx', component(50, 10)).includes('outweighs'), false);
+  assert.equal(created('client/src/Panel/Panel.test.tsx', component(50, 10)).includes('outweighs'), false);
+
+  const already = note(runHook('style-advice.mjs', edit(repo, 'client/src/Big/Big.tsx', '  const v1 = 0;', '  const v1 = 1;'), repo));
+  assert.equal(already?.additionalContext.includes('outweighs') ?? false, false);
+  cleanup(repo);
+});

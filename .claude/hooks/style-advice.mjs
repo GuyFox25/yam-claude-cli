@@ -2,12 +2,13 @@
 // PostToolUse(Edit|Write|MultiEdit): advisory notes on the code style rules (.claude/rules/code-style.md, react.md, backend.md,
 // csharp.md, testing.md) for the text Claude just added. Line-based heuristics, so it never blocks; the project's ESLint config
 // (or the .NET analyzers) wins. JS/TS: style, debug leftovers, a new source file without a test, and hard-coded UI text when
-// the client uses i18n. C#: async void, the Async suffix, SQL built from strings. With CLAUDE_HOOK_RTL=on: physical CSS
+// the client uses i18n. Whole file: a missing blank line before the stylesheet import, and (only on the edit that crosses the
+// limit) a file past ~150/~250 lines or a component whose logic outweighs its JSX. C#: async void, the Async suffix, SQL built from strings. With CLAUDE_HOOK_RTL=on: physical CSS
 // directions in RTL UIs.
 import { readFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { readInput, advise, allow } from '../lib/hook-io.mjs';
-import { projectRoot, resolveInRoot, walkFiles, pkgJson, allDeps, isTracked, PACKAGES } from '../lib/detect.mjs';
+import { projectRoot, resolveInRoot, walkFiles, pkgJson, allDeps, isTracked, git, PACKAGES } from '../lib/detect.mjs';
 
 const MAX_SNIPPETS = 3;
 const MAX_SNIPPET = 120;
@@ -181,6 +182,112 @@ const missingTest = () => {
 };
 const noTest = missingTest();
 if (noTest) findings.set(noTest, []);
+
+// Whole-file checks. `after` is the file as written; `before` is rebuilt by undoing this edit (null when unknown), so the
+// size and ratio notes fire only on the edit that crosses a limit, never on every edit of an already-big legacy file.
+const after = typeof ti.content === 'string' ? ti.content : readOrEmpty(abs);
+const before = (() => {
+  if (input?.tool_name === 'Write') {
+    if (input?.tool_response?.type === 'create') return '';
+
+    return isTracked(root, rel) ? git(root, ['show', `HEAD:${rel}`]) : null;
+  }
+  const edits = ti.edits ?? [{ old_string: ti.old_string, new_string: ti.new_string, replace_all: ti.replace_all }];
+  let text = after;
+  for (const { old_string: from = '', new_string: to = '', replace_all: all } of [...edits].reverse()) {
+    if (!to || !text.includes(to)) return null;
+    text = all ? text.split(to).join(from) : text.replace(to, () => from);
+  }
+
+  return text;
+})();
+const lineCount = (text) => text.replace(/\r?\n$/, '').split(/\r?\n/).length;
+
+// Stylesheet imports come last, after one blank line (code-style.md).
+const STYLE_IMPORT = /^\s*import\s+(?:[\w{}\s,*]+\s+from\s+)?['"][^'"]+\.(css|scss|sass|less)['"]/;
+const stylesheetSpacing = () => {
+  if (!isJs || !/^\s*import\b/m.test(added)) return [];
+  const lines = after.split(/\r?\n/);
+
+  return lines.filter((line, i) => STYLE_IMPORT.test(line) && i > 0 && lines[i - 1].trim() && !STYLE_IMPORT.test(lines[i - 1]));
+};
+const unspaced = stylesheetSpacing();
+if (unspaced.length) findings.set('no blank line before the stylesheet import: separate it from the other imports with one empty line', unspaced.slice(0, MAX_SNIPPETS).map((s) => s.trim()));
+
+// File size: ~150 lines for a component, ~250 for any other source file (react.md, code-style.md).
+const sizeLimit = isComponentFile ? 150 : 250;
+const tooLong = () => {
+  if (!isJs || isTest || !PACKAGES.includes(pkg) || before === null) return null;
+  const now = lineCount(after);
+  if (now <= sizeLimit || lineCount(before) > sizeLimit) return null;
+
+  return `file is ${now} lines (limit ~${sizeLimit}${isComponentFile ? ' for a component' : ''}): split it by responsibility (react.md, code-style.md)`;
+};
+const long = tooLong();
+if (long) findings.set(long, []);
+
+// Lines of returned JSX (`return (` or `=> (` followed by a tag) vs the other code lines: imports, types, comments and
+// lone closing brackets don't count.
+const markupSplit = (text) => {
+  const lines = text.split(/\r?\n/).map(codeOf);
+  let jsx = 0;
+  let logic = 0;
+  let depth = 0;
+  let skip = null;
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    if (depth > 0) {
+      jsx += 1;
+      for (const ch of line) depth += ch === '(' ? 1 : ch === ')' ? -1 : 0;
+
+      return;
+    }
+    if (skip) {
+      if (skip(line)) skip = null;
+
+      return;
+    }
+    if (/^import\b/.test(trimmed)) {
+      if (!/\bfrom\s*''|^import\s*''|;\s*$/.test(trimmed)) skip = (l) => /\bfrom\s*''|;\s*$/.test(l);
+
+      return;
+    }
+    if (/^(export\s+)?(type|interface)\s/.test(trimmed)) {
+      let braces = 0;
+      const balanced = (l) => {
+        for (const ch of l) braces += ch === '{' ? 1 : ch === '}' ? -1 : 0;
+
+        return braces <= 0 && !/[=|&,{]\s*$/.test(l.trim());
+      };
+      if (!balanced(line)) skip = balanced;
+
+      return;
+    }
+    if (isComment(trimmed) || /^[)}\]];?,?\)?;?$/.test(trimmed)) return;
+    const next = lines.slice(i + 1).find((l) => l.trim());
+    if (/(\breturn|=>)\s*\(\s*$/.test(trimmed) && next?.trim().startsWith('<')) {
+      depth = 1;
+
+      return;
+    }
+    if (/^return\s*</.test(trimmed)) jsx += 1;
+    else logic += 1;
+  });
+
+  return { jsx, logic };
+};
+const LOGIC_MIN = 40;
+const logicHeavy = () => {
+  if (!isComponentFile || isTest || before === null) return null;
+  const heavy = ({ jsx, logic }) => logic > LOGIC_MIN && logic > jsx;
+  const now = markupSplit(after);
+  if (!heavy(now) || heavy(markupSplit(before))) return null;
+
+  return `component logic (${now.logic} lines) outweighs its JSX (${now.jsx} lines): move state, effects and handlers into a \`use<Name>\` hook (react.md)`;
+};
+const heavy = logicHeavy();
+if (heavy) findings.set(heavy, []);
 
 if (!findings.size) allow();
 

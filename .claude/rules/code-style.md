@@ -33,12 +33,20 @@ export const toDto = (row: UserRow): UserDto => {
 4. Relative imports (`./`, `../`)
 5. Stylesheets (`*.scss`, `*.css`, `*.module.scss`), always last
 
-Separate the groups with a blank line if the file already does.
+Separate the groups with a blank line if the file already does. **Always** put one blank line before the stylesheet imports, even when the other groups aren't separated:
+
+```ts
+import { useState } from 'react';
+import { Button } from '../Button';
+
+import styles from './OrderCard.module.scss';
+```
 
 ## Functions
 - One function does one thing. Keep it under ~30 lines; split it if it grows past that.
 - At most 3 parameters. Past that, take one typed options object: `({ userId, limit, cursor }: ListOptions)`.
 - Return early (guard clauses) instead of nesting `if`/`else`.
+- Keep a source file under ~250 lines (a component file under ~150, `react.md`). Past that, split it by responsibility.
 
 ## Drizzle schemas
 - Import a table from its own file, **never** from the schema index barrel (`../schema`, `schema/index.ts`):
